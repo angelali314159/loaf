@@ -1,10 +1,8 @@
-// Import the initialized Firebase app
-import { app } from "./firebaseConfig";
-// Import authentication functions as needed
-// Example: import { getAuth } from "firebase/auth";
+// auth.ts
+import { getAuth } from "firebase/auth";
+import { app } from "./firebaseConfig"; // Import the 'app' instance from your config file
 
-// Initialize and export auth instance here
-// Example: const auth = getAuth(app);
-// export { auth };
+// Initialize Firebase Authentication and get a reference to the service
+const auth = getAuth(app);
 
-// Placeholder for future authentication-related code
+export { auth };

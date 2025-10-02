@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import 'firebaseui/dist/firebaseui.css';
 import React, { useState } from 'react';
 import { Dimensions, View } from 'react-native';
 import { Button, H1, TextBoxInput } from '../../components/typography';

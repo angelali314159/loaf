@@ -1,37 +1,86 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
-import { Alert, Dimensions, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, View } from 'react-native';
+import { Button, H1, TextBoxInput } from '../../components/typography';
+import { auth } from '../../firebase/firebaseConfig';
 
 export default function Signup() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
+    // Validation
+    if (!email || !password || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match.");
       return;
     }
 
-    try {
-      const response = await fetch('http://localhost:5050/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        console.error(message);
-        Alert.alert("Error", "Signup failed.");
-        return;
-      }
-
-      Alert.alert("Success", "Signup successful!");
-    } catch (error) {
-      console.error("Error during signup:", error);
-      Alert.alert("Error", "An unexpected error occurred.");
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long.");
+      return;
     }
+
+    setIsLoading(true);
+
+    try {
+      // Firebase authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      console.log('User signed up successfully:', user.uid);
+      Alert.alert(
+        "Success", 
+        "Account created successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // TO-DO: Navigate to main app or onboarding
+            }
+          }
+        ]
+      );
+
+    } catch (error: any) {
+      console.error("Error during signup:", error);
+      
+      let errorMessage = "An unexpected error occurred.";
+      
+      // Handle specific Firebase auth errors
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = "This email is already registered. Please use a different email or try logging in.";
+          break;
+        case 'auth/invalid-email':
+          errorMessage = "Please enter a valid email address.";
+          break;
+        case 'auth/weak-password':
+          errorMessage = "Password is too weak. Please choose a stronger password.";
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = "Network error. Please check your internet connection.";
+          break;
+        default:
+          errorMessage = error.message || "Signup failed. Please try again.";
+      }
+      
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const navigateToLogin = () => {
+    router.push('/(tabs)/login');
   };
 
   return (
@@ -42,106 +91,50 @@ export default function Signup() {
       end={{ x: 0, y: 1 }}
       style={{ height: Dimensions.get('screen').height, width: Dimensions.get('screen').width }}
     >
-      <View style={styles.container}>
-        <View style={styles.main}>
-          <Text style={styles.title}>Sign Up</Text>
+      <View className="flex-1 justify-center items-center">
+        <View className="flex-1 w-full h-full items-center justify-center">
+          <H1 className="text-center my-5">Sign Up</H1>
 
-          {/* Username Input */}
-          <TextInput
-            style={styles.input}
-            placeholder="Username"
-            placeholderTextColor="#F9F6EE"
-            value={username}
-            onChangeText={(text) => setUsername(text)}
+          {/* Email Input */}
+          <TextBoxInput
+            placeholder="Email"
+            value={email}
+            onChangeText={(text) => setEmail(text)}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           {/* Password Input */}
-          <TextInput
-            style={styles.input}
+          <TextBoxInput
             placeholder="Password"
-            placeholderTextColor="#F9F6EE"
             secureTextEntry={true}
             value={password}
             onChangeText={(text) => setPassword(text)}
           />
 
           {/* Confirm Password Input */}
-          <TextInput
-            style={styles.input}
+          <TextBoxInput
             placeholder="Confirm Password"
-            placeholderTextColor="#F9F6EE"
             secureTextEntry={true}
             value={confirmPassword}
             onChangeText={(text) => setConfirmPassword(text)}
           />
 
           {/* Sign Up Button */}
-          <TouchableOpacity style={styles.buttons} onPress={handleSignup}>
-            <Text style={styles.buttonText}>Sign Up</Text>
-          </TouchableOpacity>
+          <Button
+            title={isLoading ? "Creating Account..." : "Sign Up"}
+            onPress={handleSignup}
+            disabled={isLoading}
+          />
 
-          {/* Navigate to Login */}
-          <TouchableOpacity style={styles.buttons}>
-            <Text style={styles.buttonText}>Back to Login</Text>
-          </TouchableOpacity>
+          {/* Back to Login Button */}
+          <Button
+            title="Back to Login"
+            onPress={navigateToLogin}
+            disabled={isLoading}
+          />
         </View>
       </View>
     </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  main: {
-    flex: 1,
-    width: Dimensions.get('screen').width,
-    height: Dimensions.get('screen').height,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    color: "#F9F6EE",
-    fontSize: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 20,
-    fontFamily: 'Montserrat_700Bold',
-  },
-  input: {
-    width: 300,
-    height: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    marginVertical: 10,
-    fontSize: 13,
-    color: "#333",
-    alignItems: 'center',
-    fontFamily: 'Montserrat_400Regular',
-  },
-  buttons: {
-    width: 200,
-    height: 30,
-    backgroundColor: '#F9F6EE',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 10,
-    shadowColor: '#808080',
-    shadowOffset: { width: 1, height: 6 },
-    shadowOpacity: 0.6,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  buttonText: {
-    fontSize: 15,
-    color: "#38434D",
-    shadowColor: 'black',
-    fontFamily: 'Montserrat_400Regular',
-  },
-});

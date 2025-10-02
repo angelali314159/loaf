@@ -1,8 +1,8 @@
-import auth from '@react-native-firebase/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
+import { signUpUser } from '../../firebase/auth';
 import { Button, H1, TextBoxInput } from '../../components/typography';
 
 export default function Signup() {
@@ -31,8 +31,7 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
-      // Firebase authentication
-      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+      const userCredential = await signUpUser(email, password);
       const user = userCredential.user;
       
       console.log('User signed up successfully:', user.uid);
@@ -43,7 +42,7 @@ export default function Signup() {
           {
             text: "OK",
             onPress: () => {
-              // TO-DO: Navigate to main app or onboarding
+              router.push('/(tabs)/');
             }
           }
         ]
@@ -54,31 +53,25 @@ export default function Signup() {
       
       let errorMessage = "An unexpected error occurred.";
       
-      // Handle specific Firebase auth errors
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = "This email is already registered. Please use a different email or try logging in.";
+          errorMessage = "This email is already registered.";
           break;
         case 'auth/invalid-email':
           errorMessage = "Please enter a valid email address.";
           break;
         case 'auth/weak-password':
-          errorMessage = "Password is too weak. Please choose a stronger password.";
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = "Network error. Please check your internet connection.";
+          errorMessage = "Password is too weak.";
           break;
         default:
-          errorMessage = error.message || "Signup failed. Please try again.";
+          errorMessage = error.message || "Signup failed.";
       }
       
       Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
     }
-
   };
-  
 
   const navigateToLogin = () => {
     router.push('/(tabs)/login');
@@ -96,39 +89,34 @@ export default function Signup() {
         <View className="flex-1 w-full h-full items-center justify-center">
           <H1 className="text-center my-5">Sign Up</H1>
 
-          {/* Email Input */}
           <TextBoxInput
             placeholder="Email"
             value={email}
-            onChangeText={(text) => setEmail(text)}
+            onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
           />
 
-          {/* Password Input */}
           <TextBoxInput
             placeholder="Password"
             secureTextEntry={true}
             value={password}
-            onChangeText={(text) => setPassword(text)}
+            onChangeText={setPassword}
           />
 
-          {/* Confirm Password Input */}
           <TextBoxInput
             placeholder="Confirm Password"
             secureTextEntry={true}
             value={confirmPassword}
-            onChangeText={(text) => setConfirmPassword(text)}
+            onChangeText={setConfirmPassword}
           />
 
-          {/* Sign Up Button */}
           <Button
             title={isLoading ? "Creating Account..." : "Sign Up"}
             onPress={handleSignup}
             disabled={isLoading}
           />
 
-          {/* Back to Login Button */}
           <Button
             title="Back to Login"
             onPress={navigateToLogin}

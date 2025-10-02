@@ -1,10 +1,9 @@
+import auth from '@react-native-firebase/auth';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
 import { Button, H1, TextBoxInput } from '../../components/typography';
-import { auth } from '../../firebase/firebaseConfig';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -33,7 +32,7 @@ export default function Signup() {
 
     try {
       // Firebase authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await auth().createUserWithEmailAndPassword(email, password);
       const user = userCredential.user;
       
       console.log('User signed up successfully:', user.uid);
@@ -77,7 +76,9 @@ export default function Signup() {
     } finally {
       setIsLoading(false);
     }
+
   };
+  
 
   const navigateToLogin = () => {
     router.push('/(tabs)/login');

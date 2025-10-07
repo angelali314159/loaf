@@ -2,8 +2,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
-import { signUpUser } from '../../firebase/auth';
 import { Button, H1, TextBoxInput } from '../../components/typography';
+import { signUpUser } from '../../firebase/auth';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -42,7 +42,7 @@ export default function Signup() {
           {
             text: "OK",
             onPress: () => {
-              router.push('/(tabs)/');
+              router.push('/(tabs)/landingMain');
             }
           }
         ]

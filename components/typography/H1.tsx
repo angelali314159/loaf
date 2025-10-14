@@ -8,7 +8,7 @@ interface H1Props extends TextProps {
 export default function H1({ children, className = '', ...props }: H1Props) {
   return (
     <Text 
-      className={`text-[#F9F6EE] text-6xl font-Montserrat_700Bold ${className}`}
+      className={`text-[#000000] text-6xl font-Montserrat_700Bold ${className}`}
       {...props}
     >
       {children}

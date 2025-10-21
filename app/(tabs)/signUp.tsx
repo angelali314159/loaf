@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
 import { Button, H1, TextBoxInput } from '../../components/typography';
-import { signUpUser } from '../../firebase/auth';
+import { createUserWithProfile } from '../../firebase/scripts/addUser';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
@@ -28,25 +30,23 @@ export default function Signup() {
       return;
     }
 
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert("Error", "Please enter your first and last name.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const userCredential = await signUpUser(email, password);
-      const user = userCredential.user;
-      
-      console.log('User signed up successfully:', user.uid);
-      Alert.alert(
-        "Success", 
-        "Account created successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.push('/(tabs)/landingMain');
-            }
+      await createUserWithProfile(email, password, firstName.trim(), lastName.trim());
+      Alert.alert("Success", "Account created successfully!", [
+        {
+          text: "OK",
+          onPress: () => {
+            router.push('/(tabs)/landingMain');
           }
-        ]
-      );
+        }
+      ]);
 
     } catch (error: any) {
       console.error("Error during signup:", error);
@@ -88,6 +88,20 @@ export default function Signup() {
       <View className="flex-1 justify-center items-center">
         <View className="flex-1 w-full h-full items-center justify-center">
           <H1 className="text-center my-5">Sign Up</H1>
+
+          <TextBoxInput
+            placeholder="First Name"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+          />
+
+          <TextBoxInput
+            placeholder="Last Name"
+            value={lastName}
+            onChangeText={setLastName}
+            autoCapitalize="words"
+          />
 
           <TextBoxInput
             placeholder="Email"

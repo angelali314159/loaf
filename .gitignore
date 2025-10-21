@@ -67,3 +67,16 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+dd a .gitignore
+
+Create a file named .gitignore in the same folder, containing:
+
+# Ignore sensitive credentials
+*.json
+
+# Ignore dependency folders
+node_modules/
+
+# Ignore logs and output files
+nohup.out

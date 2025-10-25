@@ -1,14 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, Dimensions, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, AppState, Dimensions, View } from 'react-native';
 import { Button, H1, TextBoxInput } from '../../components/typography';
-import { signUpUser } from '../../firebase/auth';
+import { supabase } from '../../utils/supabase';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
@@ -28,50 +29,73 @@ export default function Signup() {
       return;
     }
 
+    if (!displayName.trim()) {
+      Alert.alert("Error", "Please enter name.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const userCredential = await signUpUser(email, password);
-      const user = userCredential.user;
-      
-      console.log('User signed up successfully:', user.uid);
-      Alert.alert(
-        "Success", 
-        "Account created successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.push('/(tabs)/landingMain');
-            }
-          }
-        ]
-      );
+      // Use Supabase signUp
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
 
-    } catch (error: any) {
-      console.error("Error during signup:", error);
-      
-      let errorMessage = "An unexpected error occurred.";
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = "This email is already registered.";
-          break;
-        case 'auth/invalid-email':
-          errorMessage = "Please enter a valid email address.";
-          break;
-        case 'auth/weak-password':
-          errorMessage = "Password is too weak.";
-          break;
-        default:
-          errorMessage = error.message || "Signup failed.";
+      if (error) {
+        console.error('Supabase signup error:', error);
+        Alert.alert('Error', error.message);
+        return;
       }
-      
-      Alert.alert("Error", errorMessage);
+
+      // If signup succeeded, attempt to store profile in `profiles` table.
+      // This is best-effort: if DB write fails, we still allow auth to proceed.
+      try {
+        const user = data?.user;
+        if (user) {
+          const { error: insertError } = await supabase.from('profiles').upsert({
+            id: user.id,
+            username: displayName.trim()
+                    });
+          if (insertError) {
+            console.warn('Failed to save profile to Supabase:', insertError);
+          }
+        }
+      } catch (dbErr) {
+        console.warn('Error writing profile to Supabase:', dbErr);
+      }
+
+      Alert.alert('Success', 'Account created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            router.push('/(tabs)/landingMain');
+          },
+        },
+      ]);
+    } catch (err: any) {
+      console.error('Error during signup:', err);
+      Alert.alert('Error', err?.message || 'Signup failed.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Register AppState handlers for Supabase auto refresh (only once)
+  useEffect(() => {
+    const handler = (state: string) => {
+      if (state === 'active') {
+        // @ts-ignore - startAutoRefresh may not be typed on the client
+        supabase.auth.startAutoRefresh?.();
+      } else {
+        supabase.auth.stopAutoRefresh?.();
+      }
+    };
+
+    const sub = AppState.addEventListener('change', handler);
+    return () => sub.remove();
+  }, []);
 
   const navigateToLogin = () => {
     router.push('/(tabs)/login');
@@ -88,6 +112,13 @@ export default function Signup() {
       <View className="flex-1 justify-center items-center">
         <View className="flex-1 w-full h-full items-center justify-center">
           <H1 className="text-center my-5">Sign Up</H1>
+
+          <TextBoxInput
+            placeholder="Name"
+            value={displayName}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
 
           <TextBoxInput
             placeholder="Email"

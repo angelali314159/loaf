@@ -30,8 +30,6 @@ FIREBASE_APP_ID=your_app_id
 FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
-3. **Test the Firebase Connection**
-Run ``npm run test-firebase``. Check that the output doesn't have any errors.
 
 4. **Start the development server**
 Run `npm start` in the terminal.

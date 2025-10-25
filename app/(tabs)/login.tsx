@@ -1,17 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
 import { Button, H1, TextBoxInput } from '../../components/typography';
-import { signInUser } from '../../firebase/auth';
-import { auth } from '../../firebase/firebaseConfig';
+import { supabase } from '../../utils/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  /*
   const handleLogin = async () => {
     // Validation
     if (!email || !password) {
@@ -20,9 +19,9 @@ export default function Login() {
     }
 
     setIsLoading(true);
-
-    try {
-      const userCredential = await signInUser(email, password);
+*/
+    //try {
+      /*onst userCredential = await signInUser(email, password);
       const user = userCredential.user;
       
       console.log('User signed in successfully:', user.uid);
@@ -77,7 +76,8 @@ export default function Login() {
       setIsLoading(false);
     }
   };
-
+  */
+      /*
   const handleForgotPassword = async () => {
     if (!email) {
       Alert.alert("Error", "Please enter your email address first.");
@@ -91,9 +91,39 @@ export default function Login() {
       Alert.alert("Error", error.message || "Failed to send password reset email.");
     }
   };
-
+*/
   const navigateToSignUp = () => {
     router.push('/(tabs)/signUp');
+  };
+
+  const handleLogin = async () => {
+    // Validation
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        console.error('Supabase sign-in error:', error);
+        Alert.alert('Error', error.message);
+        return;
+      }
+
+      // Successful sign in — navigate to main app
+      router.push('/(tabs)/landingMain');
+    } catch (err: any) {
+      console.error('Error during login:', err);
+      Alert.alert('Error', err?.message || 'Login failed.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -124,14 +154,8 @@ export default function Login() {
           />
 
           <Button
-            title={isLoading ? "Signing In..." : "Login"}
+            title={isLoading ? 'Signing in...' : 'Sign In'}
             onPress={handleLogin}
-            disabled={isLoading}
-          />
-
-          <Button
-            title="Forgot Password"
-            onPress={handleForgotPassword}
             disabled={isLoading}
           />
 

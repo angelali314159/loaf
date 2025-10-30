@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, TouchableOpacity, View } from 'react-native';
 import { H1, H2, P } from '../../components/typography';
 
+
 interface Exercise {
   name: string;
   sets: number;

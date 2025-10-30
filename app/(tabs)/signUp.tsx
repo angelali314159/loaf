@@ -10,9 +10,26 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
+
+    //TESTING CODE FOR PULLING INFO FROM SUPABASE
+    let { data: exercise_library, error } = await supabase
+      .from('exercise_library')
+      .select('name')
+    console.log('Exercise Library:', exercise_library);
+    if (error) {
+      console.error('Error fetching exercise library:', error);
+    }
+
+    //*************************************************** */
+
+
+
+
     // Validation
     if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields.");
@@ -29,18 +46,24 @@ export default function Signup() {
       return;
     }
 
-    if (!displayName.trim()) {
-      Alert.alert("Error", "Please enter name.");
+    if (!displayName.trim() || displayName.trim().length < 3) {
+      Alert.alert('Error', 'Please enter a username at least 3 characters long.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Use Supabase signUp
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: {
+            username: displayName.trim(),
+            first_name: firstName.trim() || null,
+            last_name: lastName.trim() || null,
+          },
+        },
       });
 
       if (error) {
@@ -49,21 +72,8 @@ export default function Signup() {
         return;
       }
 
-      // If signup succeeded, attempt to store profile in `profiles` table.
-      // This is best-effort: if DB write fails, we still allow auth to proceed.
-      try {
-        const user = data?.user;
-        if (user) {
-          const { error: insertError } = await supabase.from('profiles').upsert({
-            id: user.id,
-            username: displayName.trim()
-                    });
-          if (insertError) {
-            console.warn('Failed to save profile to Supabase:', insertError);
-          }
-        }
-      } catch (dbErr) {
-        console.warn('Error writing profile to Supabase:', dbErr);
+      if (!data?.session) {
+        Alert.alert('Check your email', 'Please check your inbox for an email to confirm your account.');
       }
 
       Alert.alert('Success', 'Account created successfully!', [
@@ -114,9 +124,22 @@ export default function Signup() {
           <H1 className="text-center my-5">Sign Up</H1>
 
           <TextBoxInput
-            placeholder="Name"
+            placeholder="Username"
             value={displayName}
             onChangeText={setName}
+            autoCapitalize="words"
+          />
+          <TextBoxInput
+            placeholder="First name"
+            value={firstName}
+            onChangeText={setFirstName}
+            autoCapitalize="words"
+          />
+
+          <TextBoxInput
+            placeholder="Last name"
+            value={lastName}
+            onChangeText={setLastName}
             autoCapitalize="words"
           />
 

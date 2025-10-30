@@ -15,6 +15,21 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
+
+    //TESTING CODE FOR PULLING INFO FROM SUPABASE
+    let { data: exercise_library, error } = await supabase
+      .from('exercise_library')
+      .select('name')
+    console.log('Exercise Library:', exercise_library);
+    if (error) {
+      console.error('Error fetching exercise library:', error);
+    }
+
+    //*************************************************** */
+
+
+
+
     // Validation
     if (!email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields.");

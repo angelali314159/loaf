@@ -105,7 +105,7 @@ export default function Login() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
@@ -113,6 +113,12 @@ export default function Login() {
       if (error) {
         console.error('Supabase sign-in error:', error);
         Alert.alert('Error', error.message);
+        return;
+      }
+
+      // If there's no session, the user may need to confirm their email (magic link/confirm flow)
+      if (!data?.session) {
+        Alert.alert('Check your email', 'Please check your inbox for a login/confirmation email.');
         return;
       }
 

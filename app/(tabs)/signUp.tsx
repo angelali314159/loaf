@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, AppState, Dimensions, View } from 'react-native';
-import { Button, H1, TextBoxInput } from '../../components/typography';
+import { Button, H1, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
 
 export default function Signup() {
@@ -24,11 +24,7 @@ export default function Signup() {
     if (error) {
       console.error('Error fetching exercise library:', error);
     }
-
     //*************************************************** */
-
-
-
 
     // Validation
     if (!email || !password || !confirmPassword) {
@@ -53,6 +49,7 @@ export default function Signup() {
 
     setIsLoading(true);
 
+    // Attempt to sign up the user with Supabase
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -121,29 +118,29 @@ export default function Signup() {
     >
       <View className="flex-1 justify-center items-center">
         <View className="flex-1 w-full h-full items-center justify-center">
-          <H1 className="text-center my-5">Sign Up</H1>
+          <H1 baseSize={30} className="text-center my-5">Sign Up</H1>
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Username"
             value={displayName}
             onChangeText={setName}
             autoCapitalize="words"
           />
-          <TextBoxInput
+          <TextLineInput
             placeholder="First name"
             value={firstName}
             onChangeText={setFirstName}
             autoCapitalize="words"
           />
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Last name"
             value={lastName}
             onChangeText={setLastName}
             autoCapitalize="words"
           />
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
@@ -151,14 +148,14 @@ export default function Signup() {
             keyboardType="email-address"
           />
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Password"
             secureTextEntry={true}
             value={password}
             onChangeText={setPassword}
           />
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Confirm Password"
             secureTextEntry={true}
             value={confirmPassword}

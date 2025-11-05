@@ -14,8 +14,10 @@ interface PProps extends TextProps {
 export default function P({ children, className = '', ...props }: PProps) {
   return (
     <Text 
-      className={`text-[#F9F6EE] text-base ${className}`}
-      style={{fontFamily: 'Montserrat_400Regular'}}
+      className={`${className}`}
+      style={{fontFamily: 'Inter_Regular',
+        color: "#2D3541",
+      }}
       {...props}
     >
       {children}

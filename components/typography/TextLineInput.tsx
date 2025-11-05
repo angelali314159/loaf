@@ -5,25 +5,28 @@ In your code, declare the TextLineInput component like this:
   className="" // optional, for any additional custom styles
   placeholder="Enter text" // optional
   placeholderColor="#BFBFBF" // optional, default is light gray
+  width="90%" // optional, default is '90%' (can also use a number like 300)
   style={{ custom styles for the TextInput }} // optional
   ...other TextInput props
 />
 */ 
 
 import React from 'react';
-import { StyleProp, TextInput, TextInputProps, TextStyle } from 'react-native';
+import { DimensionValue, StyleProp, TextInput, TextInputProps, TextStyle } from 'react-native';
 
 interface TextLineInputProps extends TextInputProps {
   className?: string;
   /** placeholder text color override */
   placeholderColor?: string;
+  /** width as a percentage string (e.g., '90%') or exact number */
+  width?: DimensionValue;
   style?: StyleProp<TextStyle> | undefined;
 }
 
-export default function TextLineInput({ className = '', placeholderColor = '#BFBFBF', style, ...props }: TextLineInputProps) {
+export default function TextLineInput({ className = '', placeholderColor = '#BFBFBF', width = '90%', style, ...props }: TextLineInputProps) {
   const inputStyle: StyleProp<TextStyle> = [
     {
-      width: '86%',
+      width,
       maxWidth: 420,
       paddingVertical: 8,
       paddingHorizontal: 4,

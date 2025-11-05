@@ -1,8 +1,7 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, AppState, Dimensions, View } from 'react-native';
-import { Button, H1, TextLineInput } from '../../components/typography';
+import { Alert, AppState, View } from 'react-native';
+import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
 
 export default function Signup() {
@@ -109,58 +108,47 @@ export default function Signup() {
   };
 
   return (
-    <LinearGradient
-      colors={['#F3B1AE', '#F5D8B9']}
-      locations={[0.3, 0.7]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ height: Dimensions.get('screen').height, width: Dimensions.get('screen').width }}
-    >
-      <View className="flex-1 justify-center items-center">
-        <View className="flex-1 w-full h-full items-center justify-center">
-          <H1 baseSize={30} className="text-center my-5">Sign Up</H1>
+      <View className="flex-1 justify-center bg-white" >
+        <View className="flex-1 w-full h-full items-start justify-center" style={{paddingHorizontal: '5%'}}>
+          <H1 baseSize={25} className="text-left mb-[0.5rem]">Create account</H1>
+          <H2 baseSize={12} className="text-left mb-[2rem]">The best decision you&apos;ve made</H2>
+            <P >Email Address</P>
 
-          <TextLineInput
-            placeholder="Username"
-            value={displayName}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-          <TextLineInput
-            placeholder="First name"
-            value={firstName}
-            onChangeText={setFirstName}
-            autoCapitalize="words"
-          />
+            <TextLineInput
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
 
-          <TextLineInput
-            placeholder="Last name"
-            value={lastName}
-            onChangeText={setLastName}
-            autoCapitalize="words"
-          />
 
-          <TextLineInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+            <P className="mt-[1rem]">Password</P>
 
-          <TextLineInput
-            placeholder="Password"
-            secureTextEntry={true}
-            value={password}
-            onChangeText={setPassword}
-          />
+            <TextLineInput
+              placeholder="Password"
+              secureTextEntry={true}
+              value={password}
+              onChangeText={setPassword}
+            />
 
-          <TextLineInput
-            placeholder="Confirm Password"
-            secureTextEntry={true}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
+            <P className="mt-[1rem]">Confirm Password</P>
+            <TextLineInput
+              placeholder="Confirm Password"
+              secureTextEntry={true}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+            />
+
+            <P className="mt-[1rem]">Username</P>
+            <TextLineInput
+              placeholder="Username"
+              value={displayName}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
+
+            <View className="mt-[2rem]"/>
 
           <Button
             title={isLoading ? "Creating Account..." : "Sign Up"}
@@ -175,6 +163,5 @@ export default function Signup() {
           />
         </View>
       </View>
-    </LinearGradient>
   );
 }

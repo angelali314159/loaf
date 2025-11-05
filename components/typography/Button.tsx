@@ -30,6 +30,7 @@ interface ButtonProps {
   borderColor?: 'blue' | 'yellow' | 'white';
   style?: ViewStyle;
   textStyle?: TextStyle;
+  className?: string;
 }
 
 const BG_MAP: Record<string, string> = {
@@ -58,6 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
   borderColor,
   style,
   textStyle,
+  className
 }) => {
   const backgroundColor = BG_MAP[color] ?? BG_MAP.yellow;
   const colorValue = FONT_MAP[fontColor] ?? FONT_MAP.blue;
@@ -65,6 +67,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
+      className={`${className}`}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}

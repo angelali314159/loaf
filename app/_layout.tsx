@@ -19,6 +19,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Montserrat_700Bold: require('../assets/fonts/Montserrat-Bold.ttf'),
     Montserrat_400Regular: require('../assets/fonts/Montserrat-Regular.ttf'),
+    Montserrat_900Bold: require('../assets/fonts/Montserrat-ExtraBold.ttf'),
+    Inter_Regular: require('../assets/fonts/Inter_18pt-Regular.ttf'),
   });
 
   const [session, setSession] = useState<Session | null>(null);

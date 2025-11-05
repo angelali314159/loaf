@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Dimensions, View } from 'react-native';
-import { Button, H1, TextBoxInput } from '../../components/typography';
+import { Button, H1, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
 
 export default function Login() {
@@ -144,7 +144,7 @@ export default function Login() {
         <View className="flex-1 w-full h-full items-center justify-center">
           <H1 className="text-center my-5">LOAF</H1>
         
-          <TextBoxInput
+          <TextLineInput
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
@@ -152,7 +152,7 @@ export default function Login() {
             keyboardType="email-address"
           />
 
-          <TextBoxInput
+          <TextLineInput
             placeholder="Password"
             secureTextEntry={true}
             value={password}

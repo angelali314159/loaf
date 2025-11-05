@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ImageBackground, ScrollView, TouchableOpacity, View } from "react-native";
-import { Button, H1, H2, P, TextBoxInput } from '../../components/typography';
+import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
 
 interface Exercise {
   name: string;
@@ -211,7 +211,7 @@ export default function InWorkout() {
                           <P className="text-[#32393d] font-bold text-center">{setIndex + 1}</P>
                         </View>
                         <View className="flex-1 border-l border-[#32393d] pl-4">
-                          <TextBoxInput
+                          <TextLineInput
                             className={`h-8 text-center text-[#32393d] bg-white border ${focused ? 'border-red-500' : 'border-gray-300'} rounded-lg`}
                             value={currReps[repIndex] || ''}
                             onChangeText={(rep) => changeRep(rep, repIndex)}

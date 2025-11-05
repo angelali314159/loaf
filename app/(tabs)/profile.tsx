@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { H1, H2, P, TextBoxInput } from '../../components/typography';
+import { H1, H2, P, TextLineInput } from '../../components/typography';
 
 interface ProfileData {
   username: string;
@@ -162,7 +162,7 @@ export default function Profile() {
 
           <View className="bg-[#FF7F7F] rounded-lg p-4 mx-5">
             {goals.map((goal, index) => (
-              <TextBoxInput
+              <TextLineInput
                 key={index}
                 className="text-white text-sm border-b border-white py-2 mb-2 bg-transparent"
                 value={goal}

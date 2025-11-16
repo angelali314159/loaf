@@ -5,7 +5,7 @@ In your code, declare the TextLineInput component like this:
   className="" // optional, for any additional custom styles
   placeholder="Enter text" // optional
   placeholderColor="#BFBFBF" // optional, default is light gray
-  width="90%" // optional, default is '90%' (can also use a number like 300)
+  width="100%" // optional, default is '100%' (can also use a number like 300)
   style={{ custom styles for the TextInput }} // optional
   ...other TextInput props
 />
@@ -23,11 +23,10 @@ interface TextLineInputProps extends TextInputProps {
   style?: StyleProp<TextStyle> | undefined;
 }
 
-export default function TextLineInput({ className = '', placeholderColor = '#BFBFBF', width = '90%', style, ...props }: TextLineInputProps) {
+export default function TextLineInput({ className = '', placeholderColor = '#BFBFBF', width = '100%', style, ...props }: TextLineInputProps) {
   const inputStyle: StyleProp<TextStyle> = [
     {
       width,
-      maxWidth: 420,
       paddingVertical: 8,
       paddingHorizontal: 4,
       borderBottomWidth: 1,

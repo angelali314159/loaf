@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, AppState, View } from 'react-native';
+import { AppState, Dimensions, Image, View } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import PopupMessage from '../../components/PopupMessage';
 import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
 
@@ -9,9 +11,21 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setName] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [popup, setPopup] = useState<{
+    visible: boolean;
+    title?: string;
+    message: string;
+    type: 'error' | 'success' | 'info';
+  }>({ visible: false, message: '', type: 'info' });
+
+  const showPopup = (message: string, type: 'error' | 'success' | 'info' = 'info', title?: string) => {
+    setPopup({ visible: true, message, type, title });
+  };
+
+  const hidePopup = () => {
+    setPopup(prev => ({ ...prev, visible: false }));
+  };
 
   const handleSignup = async () => {
 
@@ -27,22 +41,22 @@ export default function Signup() {
 
     // Validation
     if (!email || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields.");
+      showPopup("Please fill in all fields.", 'error', 'Validation Error');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match.");
+      showPopup("Passwords do not match.", 'error', 'Validation Error');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long.");
+      showPopup("Password must be at least 6 characters long.", 'error', 'Validation Error');
       return;
     }
 
     if (!displayName.trim() || displayName.trim().length < 3) {
-      Alert.alert('Error', 'Please enter a username at least 3 characters long.');
+      showPopup('Please enter a username at least 3 characters long.', 'error', 'Validation Error');
       return;
     }
 
@@ -55,34 +69,29 @@ export default function Signup() {
         password,
         options: {
           data: {
-            username: displayName.trim(),
-            first_name: firstName.trim() || null,
-            last_name: lastName.trim() || null,
+            username: displayName.trim()
           },
         },
       });
 
       if (error) {
         console.error('Supabase signup error:', error);
-        Alert.alert('Error', error.message);
+        showPopup(error.message || 'An error occurred during signup.', 'error', 'Signup Error');
         return;
       }
 
       if (!data?.session) {
-        Alert.alert('Check your email', 'Please check your inbox for an email to confirm your account.');
+        showPopup('Please check your inbox for an email to confirm your account.', 'info', 'Check Your Email');
+      } else {
+        showPopup('Account created successfully!', 'success', 'Welcome!');
+        // Navigate after a short delay to let user see the success message
+        setTimeout(() => {
+          router.push('/(tabs)/landingMain');
+        }, 1500);
       }
-
-      Alert.alert('Success', 'Account created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            router.push('/(tabs)/landingMain');
-          },
-        },
-      ]);
     } catch (err: any) {
       console.error('Error during signup:', err);
-      Alert.alert('Error', err?.message || 'Signup failed.');
+      showPopup(err?.message || 'Signup failed.', 'error', 'Error');
     } finally {
       setIsLoading(false);
     }
@@ -107,61 +116,101 @@ export default function Signup() {
     router.push('/(tabs)/login');
   };
 
-  return (
-      <View className="flex-1 justify-center bg-white" >
-        <View className="flex-1 w-full h-full items-start justify-center" style={{paddingHorizontal: '5%'}}>
-          <H1 baseSize={25} className="text-left mb-[0.5rem]">Create account</H1>
-          <H2 baseSize={12} className="text-left mb-[2rem]">The best decision you&apos;ve made</H2>
-            <P >Email Address</P>
+    return (
+    <View className="flex-1 bg-white justify-center">
 
-            <TextLineInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-
-
-            <P className="mt-[1rem]">Password</P>
-
-            <TextLineInput
-              placeholder="Password"
-              secureTextEntry={true}
-              value={password}
-              onChangeText={setPassword}
-            />
-
-            <P className="mt-[1rem]">Confirm Password</P>
-            <TextLineInput
-              placeholder="Confirm Password"
-              secureTextEntry={true}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
-
-            <P className="mt-[1rem]">Username</P>
-            <TextLineInput
-              placeholder="Username"
-              value={displayName}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
-
-            <View className="mt-[2rem]"/>
-
-          <Button
-            title={isLoading ? "Creating Account..." : "Sign Up"}
-            onPress={handleSignup}
-            disabled={isLoading}
-          />
-
-          <Button
-            title="Back to Login"
-            onPress={navigateToLogin}
-            disabled={isLoading}
-          />
-        </View>
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
+        <Svg height={Dimensions.get('screen').height * .5} width={Dimensions.get('screen').width}>
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%" //centered horizontally
+              cy="0%" //top edge
+              rx="150%" //horiztonal radius
+              ry="70%" //vertical radius
+              gradientUnits="objectBoundingBox"
+            >
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={.1} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
       </View>
+
+      {/* MAIN CONTENT */}
+      <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
+        
+        <Image
+          source={require('../../assets/images/cat_with_pink_ball.png')}
+          style={{
+            height: Dimensions.get('screen').height * 0.06,
+            width: Dimensions.get('screen').width * 0.18,
+            marginBottom: 15
+          }}
+          resizeMode="contain"
+        />
+
+        <H1 baseSize={25} className="text-left mb-[0.5rem]">Create account</H1>
+        <H2 baseSize={12} className="text-left mb-[2rem]">The best decision you&apos;ve made</H2>
+
+        <P>Email Address</P>
+        <TextLineInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        <P className="mt-[1rem]">Password</P>
+        <TextLineInput
+          placeholder="Password"
+          secureTextEntry={true}
+          value={password}
+          onChangeText={setPassword}
+        />
+
+        <P className="mt-[1rem]">Confirm Password</P>
+        <TextLineInput
+          placeholder="Confirm Password"
+          secureTextEntry={true}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
+
+        <P className="mt-[1rem]">Username</P>
+        <TextLineInput
+          placeholder="Username"
+          value={displayName}
+          onChangeText={setName}
+          autoCapitalize="words"
+        />
+
+        <View style={{ height: Dimensions.get('window').height * 0.06 }} />
+
+        <Button
+          title={isLoading ? "Creating Account..." : "Sign Up"}
+          onPress={handleSignup}
+          disabled={isLoading}
+        />
+
+        <Button
+          title="Back to Login"
+          onPress={navigateToLogin}
+          disabled={isLoading}
+        />
+
+      </View>
+      
+      <PopupMessage
+        visible={popup.visible}
+        title={popup.title}
+        message={popup.message}
+        type={popup.type}
+        onClose={hidePopup}
+      />
+    </View>
   );
 }

@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ImageBackground, ScrollView, TouchableOpacity, View } from "react-native";
 import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
+
 
 interface Exercise {
   name: string;
@@ -17,6 +18,14 @@ interface WorkoutData {
 }
 
 export default function InWorkout() {
+  // Helper to sum only numbers in reps
+  function sumLbs(reps: string[]): number {
+    return reps.reduce((sum, val) => {
+      const n = parseInt(val, 10);
+      return sum + (isNaN(n) ? 0 : n);
+    }, 0);
+  }
+
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
   const [workoutName, setWorkoutName] = useState("During Workout");
   const [finishedWorkout, setFinished] = useState(false);
@@ -24,6 +33,8 @@ export default function InWorkout() {
   const [checked, setChecked] = useState<string[]>([]);
   const [currReps, setNewReps] = useState<string[]>([]);
   const [focused, setFocus] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // TO-DO: Replace with actual workout data based on workoutId
   const mockWorkoutData: WorkoutData = {
@@ -54,6 +65,11 @@ export default function InWorkout() {
       }
     });
     setNewReps(initialReps);
+    // Start timer
+    timerRef.current = setInterval(() => setTimer(t => t + 1), 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [workoutId]);
 
   const getTotalSets = (): number => {
@@ -94,6 +110,7 @@ export default function InWorkout() {
     const newReps = [...currReps];
     newReps.splice(insertIndex, 0, exercise.reps);
     setNewReps(newReps);
+          
   };
 
   const handlePressDelete = (exercise: Exercise) => {
@@ -148,14 +165,44 @@ export default function InWorkout() {
       {!finishedWorkout ? (
         <View className="flex-1 mb-16">
           {/* Header */}
-          <View className="flex-row justify-between items-center mt-10 mx-5">
-            <H2 className="text-[#32393d] flex-1">{workoutName}</H2>
-            <TouchableOpacity 
-              className="border-2 border-[#32393d] rounded-lg px-5 py-2"
+          <View className="flex-row items-center justify-between mt-4 mx-5 mb-2">
+            {/* Duration */}
+            <View className="flex-1 items-center">
+              <P className="text-[#32393d] mb-1">Duration</P>
+              <H2 className="text-[#32393d]">{Math.floor(timer / 60).toString().padStart(2, '0')}:{(timer % 60).toString().padStart(2, '0')}</H2>
+            </View>
+            {/* Divider */}
+            <View style={{ width: 1, height: 48, backgroundColor: '#32393d', marginHorizontal: 8 }} />
+            {/* Lbs */}
+            <View className="flex-1 items-center">
+              <P className="text-[#32393d] mb-1">lbs</P>
+              <H2 className="text-[#32393d]">{sumLbs(currReps)}</H2>
+            </View>
+            {/* Divider */}
+            <View style={{ width: 1, height: 48, backgroundColor: '#32393d', marginHorizontal: 8 }} />
+            {/* Sets */}
+            <View className="flex-1 items-center">
+              <P className="text-[#32393d] mb-1">Sets</P>
+              <H2 className="text-[#32393d]">{checked.length}</H2>
+            </View>
+          </View>
+
+          {/* Top Buttons */}
+          <View className="flex-row justify-between mx-5 mb-4">
+            <Button
+              title="Add Exercise"
+              color="yellow"
+              fontColor="blue"
+              style={{ flex: 1, marginRight: 8 }}
+              onPress={() => {}}
+            />
+            <Button
+              title="Finish workout"
+              color="blue"
+              fontColor="yellow"
+              style={{ flex: 1, marginLeft: 8 }}
               onPress={endWorkout}
-            >
-              <P className="text-[#32393d] font-bold">End</P>
-            </TouchableOpacity>
+            />
           </View>
 
           {/* Workout Content */}

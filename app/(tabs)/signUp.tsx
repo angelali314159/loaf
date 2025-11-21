@@ -155,7 +155,7 @@ export default function Signup() {
         <H1 baseSize={25} className="text-left mb-[0.5rem]">Create account</H1>
         <H2 baseSize={12} className="text-left mb-[2rem]">The best decision you&apos;ve made</H2>
 
-        <P>Email Address #</P>
+        <P>Email Address</P>
         <TextLineInput
           placeholder="Email"
           value={email}

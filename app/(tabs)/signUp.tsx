@@ -200,6 +200,7 @@ export default function Signup() {
           title="Back to Login"
           onPress={navigateToLogin}
           disabled={isLoading}
+          
         />
 
       </View>

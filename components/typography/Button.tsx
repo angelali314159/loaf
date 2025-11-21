@@ -10,13 +10,14 @@ In your code, declare the Button component like this:
   borderColor="white" // optional
   style={{ custom styles for the button container }} // optional
   textStyle={{ custom styles for the button text }} // optional
+  width="100%" // optional, default is '100%' (can also use a number like 300)
 />
 */
 
 
 import React from 'react';
 
-import { Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
+import { DimensionValue, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface ButtonProps {
   title: string;
@@ -31,6 +32,7 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   className?: string;
+  width?: DimensionValue;
 }
 
 const BG_MAP: Record<string, string> = {
@@ -59,7 +61,8 @@ export const Button: React.FC<ButtonProps> = ({
   borderColor,
   style,
   textStyle,
-  className
+  className,
+  width = '100%' as DimensionValue
 }) => {
   const backgroundColor = BG_MAP[color] ?? BG_MAP.yellow;
   const colorValue = FONT_MAP[fontColor] ?? FONT_MAP.blue;
@@ -74,7 +77,7 @@ export const Button: React.FC<ButtonProps> = ({
       style={[
         {
           alignSelf: 'center',
-          width: '86%',
+          width,
           maxWidth: 420,
           paddingVertical: 14,
           paddingHorizontal: 20,

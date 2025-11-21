@@ -161,7 +161,7 @@ export default function Signup() {
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
-          keyboardType="email-address"
+          keyboardType="email-address" 
         />
 
         <P className="mt-[1rem]">Password</P>

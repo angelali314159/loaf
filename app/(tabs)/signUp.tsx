@@ -22,6 +22,7 @@ export default function Signup() {
   const showPopup = (message: string, type: 'error' | 'success' | 'info' = 'info', title?: string) => {
     setPopup({ visible: true, message, type, title });
   };
+  //hi
 
   const hidePopup = () => {
     setPopup(prev => ({ ...prev, visible: false }));

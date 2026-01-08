@@ -1,7 +1,9 @@
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import PopupMessage from '../../components/PopupMessage';
 import { Button, H3, H4, P } from '../../components/typography';
 
 interface SetData {
@@ -45,6 +47,12 @@ export default function InWorkout() {
 
   // Exercises state
   const [exercises, setExercises] = useState<ExerciseData[]>(dummyExercises);
+
+  // Popup state
+  const [showPopup, setShowPopup] = useState(false);
+
+  // Router for navigation
+  const router = useRouter();
 
   // Stats
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
@@ -126,9 +134,18 @@ export default function InWorkout() {
   };
 
   const handleFinishWorkout = () => {
-    //TODO:
-    // Placeholder for finish logic
-    // e.g., save to server, navigate, etc.
+    // Check if all sets are completed
+    const allSetsCompleted = exercises.every(exercise =>
+      exercise.sets.every(set => set.checked)
+    );
+
+    if (!allSetsCompleted) {
+      setShowPopup(true);
+      return;
+    }
+
+    // Navigate to workout complete page
+    router.push('/(tabs)/workoutComplete');
   };
 
   return (
@@ -154,7 +171,7 @@ export default function InWorkout() {
       </View>
         
       {/* Top Section: Header */}
-      <View className="px-6 pt-10 pb-6 mt-15 ml-25 mr-25">
+      <View className="px-6 pt-10 pb-6" style={{ marginTop: 20 }}>
         <H3 baseSize={20} className="mb-4">{getTodayDateStr()} Workout</H3>
         {/* Stats Row */}
         <View className="flex-row items-stretch mb-4 mt-5">
@@ -204,11 +221,11 @@ export default function InWorkout() {
       {/* Bottom Section: Exercises - SCROLLABLE */}
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={true}>
         {exercises.map((exercise, exIdx) => (
-          <View key={exIdx} className="mb-8">
+          <View key={exIdx} className="mb-2 p-4">
             <H4 baseSize={16}className="mb-3">{exercise.name}</H4>
             {/* Table Header */}
             <View className="flex-row pb-2 mb-1">
-              <View className="w-10"><P className="text-center">Set</P></View>
+              <View className="flex-1"><P className="text-center">Set</P></View>
               <View className="flex-1 pl-2"><P className="text-center">Reps</P></View>
               <View className="flex-1 pl-2"><P className="text-center">Ibs</P></View>
               <View className="w-12"/>
@@ -217,7 +234,7 @@ export default function InWorkout() {
             {/* Sets Rows */}
             {exercise.sets.map((set, setIdx) => (
               <View key={setIdx} className="flex-row items-center py-2">
-                <View className="w-10"><P className="text-center">{setIdx + 1}</P></View>
+                <View className="flex-1"><P className="text-center">{setIdx + 1}</P></View>
                 <View className="flex-1 pl-2">
                   <TextInput
                     className="h-8 text-center text-[#565656]"
@@ -272,6 +289,16 @@ export default function InWorkout() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Popup Message */}
+      <PopupMessage
+        visible={showPopup}
+        title="Incomplete Workout"
+        message="Please complete all sets before finishing your workout."
+        type="error"
+        onClose={() => setShowPopup(false)}
+        confirmText="Got it"
+      />
     </View>
   );
 }

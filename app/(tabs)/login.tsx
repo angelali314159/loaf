@@ -1,16 +1,30 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, View, Image, TouchableOpacity, Text, TextInput, StyleSheet, Dimensions, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {Dimensions, Image, View, TouchableOpacity, StyleSheet} from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import PopupMessage from '../../components/PopupMessage';
+import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
-
-const { width } = Dimensions.get('window');
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [popup, setPopup] = useState<{
+    visible: boolean;
+    title?: string;
+    message: string;
+    type: 'error' | 'success' | 'info';
+  }>({ visible: false, message: '', type: 'info' });
+
+  const showPopup = (message: string, type: 'error' | 'success' | 'info' = 'info', title?: string) => {
+    setPopup({ visible: true, message, type, title });
+  };
+
+  const hidePopup = () => {
+    setPopup(prev => ({ ...prev, visible: false }));
+  };
 
   const navigateToSignUp = () => {
     router.push('/(tabs)/signUp');
@@ -19,7 +33,7 @@ export default function Login() {
   const handleLogin = async () => {
     // Validation
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showPopup("Please fill in all fields.", 'error', 'Validation Error');
       return;
     }
 
@@ -32,103 +46,100 @@ export default function Login() {
 
       if (error) {
         console.error('Supabase sign-in error:', error);
-        Alert.alert('Error', error.message);
+        showPopup(error.message);
         return;
       }
 
       if (!data?.session) {
-        Alert.alert('Check your email', 'Please check your inbox for a login/confirmation email.');
+        showPopup('Please check your inbox for a login/confirmation email.');
         return;
       }
 
       router.push('/(tabs)/landingMain');
     } catch (err: any) {
       console.error('Error during login:', err);
-      Alert.alert('Error', err?.message || 'Login failed.');
+     showPopup(err?.message || 'Login failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
-    Alert.alert('Forgot Password', 'Password reset functionality coming soon!');
+    showPopup('Password reset functionality coming soon!');
   };
 
   return (
-    <View style={styles.container}>
-      {/* Circular yellow glow - simulating radial gradient */}
-      <LinearGradient
-        colors={['rgba(252, 222, 140, 0.4)', 'rgba(252, 222, 140, 0.25)', 'rgba(252, 222, 140, 0.1)', 'rgba(255, 255, 255, 0)']}
-        locations={[0, 0.3, 0.6, 1]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[styles.yellowGlow, { left: (width / 2) - 400 }]}
-      />
+    <View className="flex-1 bg-white justify-center">
 
-      <View style={styles.contentContainer}>
-        {/* Cat Image */}
-        <View style={styles.catContainer}>
-          <Image
-            source={require('../../assets/images/cat_with_pink_ball.png')}
-            style={styles.catImage}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Login Title */}
-        <Text style={styles.title}>Login</Text>
-
-        {/* Subtitle */}
-        <Text style={styles.subtitle}>You're back, we missed you!</Text>
-
-        {/* Email Address Label */}
-        <Text style={styles.label}>Email Address</Text>
-
-        {/* Email Input - wrapped to prevent focus outline */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="JennaSmith@gmail.com"
-            placeholderTextColor="#C7C7C7"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            selectionColor="#2D3541"
-            underlineColorAndroid="transparent"
-          />
-          <View style={styles.underline} />
-        </View>
-
-        {/* Password Label */}
-        <Text style={styles.label}>Password</Text>
-
-        {/* Password Input with Eye Icon */}
-        <View style={styles.inputContainer}>
-          <View style={styles.passwordWrapper}>
-            <TextInput
-              style={[styles.input, styles.passwordInput]}
-              placeholder="***********"
-              placeholderTextColor="#C7C7C7"
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-              selectionColor="#2D3541"
-              underlineColorAndroid="transparent"
-            />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-              activeOpacity={0.7}
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
+        <Svg height={Dimensions.get('screen').height * .5} width={Dimensions.get('screen').width}>
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%" //centered horizontally
+              cy="0%" //top edge
+              rx="150%" //horiztonal radius
+              ry="70%" //vertical radius
+              gradientUnits="objectBoundingBox"
             >
-              <View style={styles.eyeIconContainer}>
-                <View style={styles.eyeOutline}>
-                  <View style={styles.eyePupil} />
-                </View>
-              </View>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.underline} />
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={.1} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
+      </View>
+
+      {/* MAIN CONTENT */}
+      <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
+
+        <Image
+          source={require('../../assets/images/cat_with_pink_ball.png')}
+          style={{
+            height: Dimensions.get('screen').height * 0.06,
+            width: Dimensions.get('screen').width * 0.18,
+            marginBottom: 15
+          }}
+          resizeMode="contain"
+        />
+
+
+        <H1 baseSize={25} className="text-left mb-[0.5rem]">Login</H1>
+        <H2 baseSize={12} className="text-left mb-[2rem]">You&apos;re back, we've missed you!</H2>
+
+        {/* Email Address */}
+        <P>Email Address</P>
+        <TextLineInput
+          placeholder="JennaSmith@gmail.com"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        {/* Password */}
+        <P className="mt-[1rem]">Password</P>
+        <View style={styles.passwordWrapper}>
+          <TextLineInput
+            placeholder="***********"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.passwordInput}
+
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            activeOpacity={0.7}
+          >
+            <Image
+              source={require('../../assets/images/eye.svg')}
+              style={styles.eyeImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Forgot Password */}
@@ -137,90 +148,37 @@ export default function Login() {
           style={styles.forgotPassword}
           activeOpacity={0.7}
         >
-          <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+
+        <View style={{ height: Dimensions.get('window').height * 0.02 }} />
+
+        <P style={styles.forgotPasswordText}>Forgot password?</P>
         </TouchableOpacity>
 
+        <View style={{ height: Dimensions.get('window').height * 0.06 }} />
+
         {/* Login Button */}
-        <TouchableOpacity
+        <Button
+          title={isLoading ? 'Signing in...' : 'Login'}
           onPress={handleLogin}
           disabled={isLoading}
-          activeOpacity={0.8}
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? 'Signing in...' : 'Login'}
-          </Text>
-        </TouchableOpacity>
+        />
       </View>
+
+      <PopupMessage
+        visible={popup.visible}
+        title={popup.title}
+        message={popup.message}
+        type={popup.type}
+        onClose={hidePopup}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  yellowGlow: {
-    position: 'absolute',
-    top: -400,
-    width: 800,
-    height: 800,
-    borderRadius: 400,
-  },
-  contentContainer: {
-    flex: 1,
-    paddingHorizontal: 40,
-    paddingTop: 40,
-  },
-  catContainer: {
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  catImage: {
-    width: 100,
-    height: 100,
-  },
-  title: {
-    fontFamily: 'Montserrat_900Bold',
-    fontSize: 48,
-    color: '#2D3541',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontFamily: 'Inter_Regular',
-    fontSize: 16,
-    marginBottom: 40,
-    color: '#2D3541',
-  },
-  label: {
-    fontFamily: 'Inter_Regular',
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#2D3541',
-  },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  input: {
-    width: '100%',
-    paddingVertical: 10,
-    paddingHorizontal: 0,
-    backgroundColor: 'transparent',
-    fontSize: 16,
-    fontFamily: 'Inter_Regular',
-    color: '#2D3541',
-    borderWidth: 0,
-    outline: 'none',
-    boxShadow: 'none',
-  } as any,
-  underline: {
-    height: 1,
-    backgroundColor: '#D1D1D1',
-    width: '100%',
-  },
   passwordWrapper: {
     position: 'relative',
+    width: '100%',
   },
   passwordInput: {
     paddingRight: 40,
@@ -231,56 +189,8 @@ const styles = StyleSheet.create({
     top: 8,
     padding: 4,
   },
-  eyeIconContainer: {
+  eyeImage: {
     width: 24,
     height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eyeOutline: {
-    width: 20,
-    height: 12,
-    borderWidth: 1.5,
-    borderColor: '#9CA3AF',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eyePupil: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#9CA3AF',
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 40,
-    marginTop: 4,
-  },
-  forgotPasswordText: {
-    fontFamily: 'Inter_Regular',
-    fontSize: 16,
-    color: '#2D3541',
-  },
-  button: {
-    alignSelf: 'center',
-    width: '90%',
-    maxWidth: 520,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    backgroundColor: '#fcde8c',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 0,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#2D3541',
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Inter_Regular',
   },
 });

@@ -149,8 +149,8 @@ export default function Login() {
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image
-              source={require('../../assets/images/eye.svg')}
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
               style={styles.eyeImage}
               resizeMode="contain"
             />

@@ -180,8 +180,8 @@ export default function Signup() {
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image
-              source={require('../../assets/images/eye.svg')}
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
               style={styles.eyeImage}
               resizeMode="contain"
             />
@@ -202,8 +202,8 @@ export default function Signup() {
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image
-              source={require('../../assets/images/eye.svg')}
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
               style={styles.eyeImage}
               resizeMode="contain"
             />

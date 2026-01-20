@@ -64,8 +64,18 @@ export default function Login() {
     }
   };
 
-  const handleForgotPassword = () => {
-    showPopup('Password reset functionality coming soon!');
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showPopup("Please enter your email address first.", "error", "Enter Email");
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showPopup("Password reset email sent. Please check your inbox.", 'success', "Enter Sent");
+    } catch (error: any) {
+      showPopup("Password reset email failed to send.", 'error', "Error sending email");
+    }
   };
 
   return (
@@ -145,13 +155,12 @@ export default function Login() {
         {/* Forgot Password */}
         <TouchableOpacity
           onPress={handleForgotPassword}
-          style={styles.forgotPassword}
           activeOpacity={0.7}
         >
 
         <View style={{ height: Dimensions.get('window').height * 0.02 }} />
 
-        <P style={styles.forgotPasswordText}>Forgot password?</P>
+        <P>Forgot password?</P>
         </TouchableOpacity>
 
         <View style={{ height: Dimensions.get('window').height * 0.06 }} />
@@ -192,5 +201,6 @@ const styles = StyleSheet.create({
   eyeImage: {
     width: 24,
     height: 24,
+    paddingBottom: 8,
   },
 });

@@ -1,3 +1,4 @@
+
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {Dimensions, Image, View, TouchableOpacity, StyleSheet} from 'react-native';
@@ -71,10 +72,14 @@ export default function Login() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
-      showPopup("Password reset email sent. Please check your inbox.", 'success', "Enter Sent");
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        showPopup(error.message, 'error', "Error");
+      } else {
+        showPopup("Password reset email sent. Please check your inbox.", 'success', "Email Sent");
+      }
     } catch (error: any) {
-      showPopup("Password reset email failed to send.", 'error', "Error sending email");
+      showPopup("Password reset email failed to send.", 'error', "Error");
     }
   };
 

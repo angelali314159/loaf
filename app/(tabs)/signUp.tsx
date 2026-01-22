@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { AppState, Dimensions, Image, View } from 'react-native';
+import { AppState, Dimensions, Image, View, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import PopupMessage from '../../components/PopupMessage';
 import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
@@ -12,6 +12,8 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [popup, setPopup] = useState<{
     visible: boolean;
     title?: string;
@@ -141,7 +143,7 @@ export default function Signup() {
 
       {/* MAIN CONTENT */}
       <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
-        
+
         <Image
           source={require('../../assets/images/cat_with_pink_ball.png')}
           style={{
@@ -165,20 +167,48 @@ export default function Signup() {
         />
 
         <P className="mt-[1rem]">Password</P>
-        <TextLineInput
-          placeholder="Password"
-          secureTextEntry={true}
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordWrapper}>
+          <TextLineInput
+            placeholder="Password"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            style={styles.passwordInput}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            activeOpacity={0.7}
+          >
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
+              style={styles.eyeImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
 
         <P className="mt-[1rem]">Confirm Password</P>
-        <TextLineInput
-          placeholder="Confirm Password"
-          secureTextEntry={true}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-        />
+        <View style={styles.passwordWrapper}>
+          <TextLineInput
+            placeholder="Confirm Password"
+            secureTextEntry={!showConfirmPassword}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            style={styles.passwordInput}
+          />
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            style={styles.eyeIcon}
+            activeOpacity={0.7}
+          >
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
+              style={styles.eyeImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </View>
 
         <P className="mt-[1rem]">Username</P>
         <TextLineInput
@@ -204,7 +234,7 @@ export default function Signup() {
         />
 
       </View>
-      
+
       <PopupMessage
         visible={popup.visible}
         title={popup.title}
@@ -215,3 +245,24 @@ export default function Signup() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  passwordWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordInput: {
+    paddingRight: 40,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 0,
+    top: 8,
+    padding: 4,
+  },
+  eyeImage: {
+    width: 24,
+    height: 24,
+    paddingBottom: 8,
+  },
+});

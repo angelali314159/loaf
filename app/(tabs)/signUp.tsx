@@ -1,9 +1,13 @@
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { AppState, Dimensions, Image, View } from "react-native";
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { AppState, Dimensions, Image, View, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  AppState,
+  Dimensions,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import PopupMessage from "../../components/PopupMessage";
 import { Button, H1, H2, P, TextLineInput } from "../../components/typography";
@@ -151,8 +155,10 @@ export default function Signup() {
       </View>
 
       {/* MAIN CONTENT */}
-      <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
-
+      <View
+        className="flex-1 w-full h-full items-start justify-center"
+        style={{ paddingHorizontal: "6%", zIndex: 1 }}
+      >
         <Image
           source={require("../../assets/images/cat_with_pink_ball.png")}
           style={{
@@ -193,8 +199,9 @@ export default function Signup() {
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image className = "eyeImage"
-              source={require('../../assets/images/eye.png')}
+            <Image
+              className="eyeImage"
+              source={require("../../assets/images/eye.png")}
               style={styles.eyeImage}
               resizeMode="contain"
             />
@@ -215,8 +222,9 @@ export default function Signup() {
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image className = "eyeImage"
-              source={require('../../assets/images/eye.png')}
+            <Image
+              className="eyeImage"
+              source={require("../../assets/images/eye.png")}
               style={styles.eyeImage}
               resizeMode="contain"
             />
@@ -259,14 +267,14 @@ export default function Signup() {
 
 const styles = StyleSheet.create({
   passwordWrapper: {
-    position: 'relative',
-    width: '100%',
+    position: "relative",
+    width: "100%",
   },
   passwordInput: {
     paddingRight: 40,
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 8,
     padding: 4,

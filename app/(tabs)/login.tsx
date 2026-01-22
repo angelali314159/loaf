@@ -1,17 +1,17 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Dimensions, View } from "react-native";
-import { Button, H1, TextLineInput } from "../../components/typography";
-import { useAuth } from "../../contexts/AuthContext";
-
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import {Dimensions, Image, View, TouchableOpacity, StyleSheet} from 'react-native';
+import {
+  Dimensions,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import PopupMessage from '../../components/PopupMessage';
-import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
-import { supabase } from '../../utils/supabase';
+import PopupMessage from "../../components/PopupMessage";
+import { Button, H1, H2, P, TextLineInput } from "../../components/typography";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../utils/supabase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,25 +22,31 @@ export default function Login() {
     visible: boolean;
     title?: string;
     message: string;
-    type: 'error' | 'success' | 'info';
-  }>({ visible: false, message: '', type: 'info' });
+    type: "error" | "success" | "info";
+  }>({ visible: false, message: "", type: "info" });
 
-  const showPopup = (message: string, type: 'error' | 'success' | 'info' = 'info', title?: string) => {
+  const { signIn } = useAuth();
+
+  const showPopup = (
+    message: string,
+    type: "error" | "success" | "info" = "info",
+    title?: string,
+  ) => {
     setPopup({ visible: true, message, type, title });
   };
 
   const hidePopup = () => {
-    setPopup(prev => ({ ...prev, visible: false }));
+    setPopup((prev) => ({ ...prev, visible: false }));
   };
 
   const navigateToSignUp = () => {
-    router.push('/(tabs)/signUp');
+    router.push("/(tabs)/signUp");
   };
 
   const handleLogin = async () => {
     // Validation
     if (!email || !password) {
-      showPopup("Please fill in all fields.", 'error', 'Validation Error');
+      showPopup("Please fill in all fields.", "error", "Validation Error");
       return;
     }
 
@@ -50,7 +56,7 @@ export default function Login() {
       router.replace("/(tabs)/landingMain");
     } catch (err: any) {
       console.error("Error during login:", err);
-      Alert.alert("Error", err?.message || "Login failed.");
+      showPopup(err?.message || "Login failed.", "error", "Error");
     } finally {
       setIsLoading(false);
     }
@@ -58,28 +64,40 @@ export default function Login() {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      showPopup("Please enter your email address first.", "error", "Enter Email");
+      showPopup(
+        "Please enter your email address first.",
+        "error",
+        "Enter Email",
+      );
       return;
     }
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) {
-        showPopup(error.message, 'error', "Error");
+        showPopup(error.message, "error", "Error");
       } else {
-        showPopup("Password reset email sent. Please check your inbox.", 'success', "Email Sent");
+        showPopup(
+          "Password reset email sent. Please check your inbox.",
+          "success",
+          "Email Sent",
+        );
       }
     } catch (error: any) {
-      showPopup("Password reset email failed to send.", 'error', "Error");
+      showPopup("Password reset email failed to send.", "error", "Error");
     }
   };
 
   return (
     <View className="flex-1 bg-white justify-center">
-
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
-        <Svg height={Dimensions.get('screen').height * .5} width={Dimensions.get('screen').width}>
+      <View
+        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
+      >
+        <Svg
+          height={Dimensions.get("screen").height * 0.5}
+          width={Dimensions.get("screen").width}
+        >
           <Defs>
             <RadialGradient
               id="topSemiCircle"
@@ -89,8 +107,8 @@ export default function Login() {
               ry="70%" //vertical radius
               gradientUnits="objectBoundingBox"
             >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={.1} />
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
             </RadialGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
@@ -98,21 +116,26 @@ export default function Login() {
       </View>
 
       {/* MAIN CONTENT */}
-      <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
-
+      <View
+        className="flex-1 w-full h-full items-start justify-center"
+        style={{ paddingHorizontal: "6%", zIndex: 1 }}
+      >
         <Image
-          source={require('../../assets/images/cat_with_pink_ball.png')}
+          source={require("../../assets/images/cat_with_pink_ball.png")}
           style={{
-            height: Dimensions.get('screen').height * 0.06,
-            width: Dimensions.get('screen').width * 0.18,
-            marginBottom: 15
+            height: Dimensions.get("screen").height * 0.06,
+            width: Dimensions.get("screen").width * 0.18,
+            marginBottom: 15,
           }}
           resizeMode="contain"
         />
 
-
-        <H1 baseSize={25} className="text-left mb-[0.5rem]">Login</H1>
-        <H2 baseSize={12} className="text-left mb-[2rem]">You&apos;re back, we've missed you!</H2>
+        <H1 baseSize={25} className="text-left mb-[0.5rem]">
+          Login
+        </H1>
+        <H2 baseSize={12} className="text-left mb-[2rem]">
+          You&apos;re back, we&apos;ve missed you!
+        </H2>
 
         {/* Email Address */}
         <P>Email Address</P>
@@ -133,15 +156,15 @@ export default function Login() {
             value={password}
             onChangeText={setPassword}
             style={styles.passwordInput}
-
           />
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeIcon}
             activeOpacity={0.7}
           >
-            <Image className = "eyeImage"
-              source={require('../../assets/images/eye.png')}
+            <Image
+              className="eyeImage"
+              source={require("../../assets/images/eye.png")}
               style={styles.eyeImage}
               resizeMode="contain"
             />
@@ -149,23 +172,24 @@ export default function Login() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity
-          onPress={handleForgotPassword}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity onPress={handleForgotPassword} activeOpacity={0.7}>
+          <View style={{ height: Dimensions.get("window").height * 0.02 }} />
 
-        <View style={{ height: Dimensions.get('window').height * 0.02 }} />
-
-        <P>Forgot password?</P>
+          <P>Forgot password?</P>
         </TouchableOpacity>
 
-        <View style={{ height: Dimensions.get('window').height * 0.06 }} />
+        <View style={{ height: Dimensions.get("window").height * 0.06 }} />
 
         {/* Login Button */}
         <Button
-          title={isLoading ? 'Signing in...' : 'Login'}
+          title={isLoading ? "Signing in..." : "Login"}
           onPress={handleLogin}
           disabled={isLoading}
+        />
+
+        <Button
+          title={"Don't have an account? Sign Up"}
+          onPress={navigateToSignUp}
         />
       </View>
 
@@ -182,14 +206,14 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   passwordWrapper: {
-    position: 'relative',
-    width: '100%',
+    position: "relative",
+    width: "100%",
   },
   passwordInput: {
     paddingRight: 40,
   },
   eyeIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 8,
     padding: 4,

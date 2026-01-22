@@ -6,6 +6,7 @@ import { Image, ScrollView, TouchableOpacity, View } from "react-native";
 import { ProtectedRoute } from "../../components/ProtectedRoute";
 import { H1, H2, P } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../utils/supabase";
 
 interface Exercise {
   name: string;
@@ -16,8 +17,13 @@ interface Exercise {
 }
 
 interface WorkoutPlan {
-  name: string;
-  exercises: string[];
+  workout_id: number;
+  workout_name: string;
+  exercises: {
+    exercise_lib_id: number;
+    name: string;
+    exercise_order: number;
+  }[];
 }
 
 export default function LandingMain() {
@@ -25,23 +31,55 @@ export default function LandingMain() {
   const [savedExercises, setSavedExercises] = useState<WorkoutPlan[]>([]);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
-  // TO-DO: Replace with actual API calls
-  const mockWorkoutPlans: WorkoutPlan[] = [
-    {
-      name: "Upper Body Blast",
-      exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"],
-    },
-    { name: "Leg Day", exercises: ["Squats", "Lunges", "Calf Raises"] },
-    {
-      name: "Core Focus",
-      exercises: ["Planks", "Russian Twists", "Leg Raises"],
-    },
-  ];
+  const fetchWorkouts = async () => {
+    if (!user?.id) return;
+
+    try {
+      // Fetch workouts for the user
+      const { data: workouts, error: workoutsError } = await supabase
+        .from("workouts")
+        .select(
+          `
+          workout_id,
+          workout_name,
+          workout_exercises (
+            exercise_lib_id,
+            exercise_order,
+            exercise_library (
+              name
+            )
+          )
+        `,
+        )
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (workoutsError) throw workoutsError;
+
+      // Transform the data to match our WorkoutPlan interface
+      const formattedWorkouts: WorkoutPlan[] = (workouts || []).map(
+        (workout) => ({
+          workout_id: workout.workout_id,
+          workout_name: workout.workout_name,
+          exercises: (workout.workout_exercises || [])
+            .sort((a, b) => a.exercise_order - b.exercise_order)
+            .map((we) => ({
+              exercise_lib_id: we.exercise_lib_id,
+              name: we.exercise_library.name,
+              exercise_order: we.exercise_order,
+            })),
+        }),
+      );
+
+      setSavedExercises(formattedWorkouts);
+      setWorkoutPlans(formattedWorkouts);
+    } catch (error) {
+      console.error("Error fetching workouts:", error);
+    }
+  };
 
   useEffect(() => {
-    // TO-DO: Fetch workout plans from API based on user.id or user.username
-    setSavedExercises(mockWorkoutPlans);
-    setWorkoutPlans(mockWorkoutPlans);
+    fetchWorkouts();
   }, [user]);
 
   const navigateToExercises = (exerciseType: string) => {
@@ -54,7 +92,7 @@ export default function LandingMain() {
   const navigateToWorkout = (workoutPlan: WorkoutPlan) => {
     router.push({
       pathname: "/(tabs)/inWorkout",
-      params: { workoutId: workoutPlan.name },
+      params: { workoutId: workoutPlan.workout_id.toString() },
     });
   };
 
@@ -99,37 +137,43 @@ export default function LandingMain() {
               className="rounded-lg p-4 min-h-[200px]"
             >
               <ScrollView showsVerticalScrollIndicator={false}>
-                {savedExercises.map((item, index) => (
-                  <TouchableOpacity
-                    key={`${item.name}-${index}`}
-                    className="bg-white/90 rounded-lg p-4 mb-3 flex-row justify-between items-center"
-                    onPress={() => navigateToWorkout(item)}
-                  >
-                    <View className="flex-1">
-                      <P className="text-[#32393d] font-bold text-lg mb-2">
-                        {item.name}
-                      </P>
-                      <View className="flex-row flex-wrap">
-                        {item.exercises
-                          .slice(0, 3)
-                          .map((exercise, exerciseIndex) => (
+                {savedExercises.length === 0 ? (
+                  <View className="items-center justify-center py-8">
+                    <P className="text-[#32393d] text-center">
+                      No workouts yet. Create your first workout!
+                    </P>
+                  </View>
+                ) : (
+                  savedExercises.map((item) => (
+                    <TouchableOpacity
+                      key={item.workout_id}
+                      className="bg-white/90 rounded-lg p-4 mb-3 flex-row justify-between items-center"
+                      onPress={() => navigateToWorkout(item)}
+                    >
+                      <View className="flex-1">
+                        <P className="text-[#32393d] font-bold text-lg mb-2">
+                          {item.workout_name}
+                        </P>
+                        <View className="flex-row flex-wrap">
+                          {item.exercises.slice(0, 3).map((exercise) => (
                             <View
-                              key={`${exercise}-${exerciseIndex}`}
+                              key={exercise.exercise_lib_id}
                               className="bg-[#FFD3D3] rounded-lg px-3 py-1 mr-2 mb-1 border border-[#32393d]"
                             >
                               <P className="text-[#32393d] text-sm font-bold">
-                                {exercise}
+                                {exercise.name}
                               </P>
                             </View>
                           ))}
-                        {item.exercises.length > 3 && (
-                          <P className="text-[#32393d] text-sm">...</P>
-                        )}
+                          {item.exercises.length > 3 && (
+                            <P className="text-[#32393d] text-sm">...</P>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                    <Feather name="chevron-right" size={24} color="#32393d" />
-                  </TouchableOpacity>
-                ))}
+                      <Feather name="chevron-right" size={24} color="#32393d" />
+                    </TouchableOpacity>
+                  ))
+                )}
               </ScrollView>
             </LinearGradient>
           </View>

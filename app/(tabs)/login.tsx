@@ -1,97 +1,32 @@
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Dimensions, View } from 'react-native';
-import { Button, H1, TextLineInput } from '../../components/typography';
+import {Dimensions, Image, View, TouchableOpacity, StyleSheet} from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import PopupMessage from '../../components/PopupMessage';
+import { Button, H1, H2, P, TextLineInput } from '../../components/typography';
 import { supabase } from '../../utils/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [popup, setPopup] = useState<{
+    visible: boolean;
+    title?: string;
+    message: string;
+    type: 'error' | 'success' | 'info';
+  }>({ visible: false, message: '', type: 'info' });
 
-  /*
-  const handleLogin = async () => {
-    // Validation
-    if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields.");
-      return;
-    }
-
-    setIsLoading(true);
-*/
-    //try {
-      /*onst userCredential = await signInUser(email, password);
-      const user = userCredential.user;
-      
-      console.log('User signed in successfully:', user.uid);
-      Alert.alert(
-        "Success", 
-        "Welcome back!",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to main app
-              router.push('/(tabs)/landingMain');
-            }
-          }
-        ]
-      );
-
-    } catch (error: any) {
-      console.error("Error during login:", error);
-      
-      let errorMessage = "An unexpected error occurred.";
-      
-      // Handle specific Firebase auth errors
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = "No account found with this email. Please check your email or sign up.";
-          break;
-        case 'auth/wrong-password':
-          errorMessage = "Incorrect password. Please try again.";
-          break;
-        case 'auth/invalid-email':
-          errorMessage = "Please enter a valid email address.";
-          break;
-        case 'auth/user-disabled':
-          errorMessage = "This account has been disabled. Please contact support.";
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = "Too many failed attempts. Please try again later.";
-          break;
-        case 'auth/network-request-failed':
-          errorMessage = "Network error. Please check your internet connection.";
-          break;
-        case 'auth/invalid-credential':
-          errorMessage = "Invalid email or password. Please try again.";
-          break;
-        default:
-          errorMessage = error.message || "Login failed. Please try again.";
-      }
-      
-      Alert.alert("Error", errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+  const showPopup = (message: string, type: 'error' | 'success' | 'info' = 'info', title?: string) => {
+    setPopup({ visible: true, message, type, title });
   };
-  */
-      /*
-  const handleForgotPassword = async () => {
-    if (!email) {
-      Alert.alert("Error", "Please enter your email address first.");
-      return;
-    }
-  
-    try {
-      await sendPasswordResetEmail(auth, email);
-      Alert.alert("Success", "Password reset email sent! Check your inbox.");
-    } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to send password reset email.");
-    }
+
+  const hidePopup = () => {
+    setPopup(prev => ({ ...prev, visible: false }));
   };
-*/
+
   const navigateToSignUp = () => {
     router.push('/(tabs)/signUp');
   };
@@ -99,7 +34,7 @@ export default function Login() {
   const handleLogin = async () => {
     // Validation
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields.');
+      showPopup("Please fill in all fields.", 'error', 'Validation Error');
       return;
     }
 
@@ -112,67 +47,165 @@ export default function Login() {
 
       if (error) {
         console.error('Supabase sign-in error:', error);
-        Alert.alert('Error', error.message);
+        showPopup(error.message);
         return;
       }
 
-      // If there's no session, the user may need to confirm their email (magic link/confirm flow)
       if (!data?.session) {
-        Alert.alert('Check your email', 'Please check your inbox for a login/confirmation email.');
+        showPopup('Please check your inbox for a login/confirmation email.');
         return;
       }
 
-      // Successful sign in — navigate to main app
       router.push('/(tabs)/landingMain');
     } catch (err: any) {
       console.error('Error during login:', err);
-      Alert.alert('Error', err?.message || 'Login failed.');
+     showPopup(err?.message || 'Login failed.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <LinearGradient 
-      colors={['#F3B1AE', '#F5D8B9']} 
-      locations={[0.3, 0.7]} 
-      start={{x: 0, y: 0}} 
-      end={{x: 0, y: 1}} 
-      style={{height: Dimensions.get('screen').height, width: Dimensions.get('screen').width}}
-    >
-      <View className="flex-1 justify-center items-center">
-        <View className="flex-1 w-full h-full items-center justify-center">
-          <H1 className="text-center my-5">LOAF</H1>
-        
-          <TextLineInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+  const handleForgotPassword = async () => {
+    if (!email) {
+      showPopup("Please enter your email address first.", "error", "Enter Email");
+      return;
+    }
 
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) {
+        showPopup(error.message, 'error', "Error");
+      } else {
+        showPopup("Password reset email sent. Please check your inbox.", 'success', "Email Sent");
+      }
+    } catch (error: any) {
+      showPopup("Password reset email failed to send.", 'error', "Error");
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-white justify-center">
+
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
+        <Svg height={Dimensions.get('screen').height * .5} width={Dimensions.get('screen').width}>
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%" //centered horizontally
+              cy="0%" //top edge
+              rx="150%" //horiztonal radius
+              ry="70%" //vertical radius
+              gradientUnits="objectBoundingBox"
+            >
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={.1} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
+      </View>
+
+      {/* MAIN CONTENT */}
+      <View className="flex-1 w-full h-full items-start justify-center" style={{ paddingHorizontal: '6%', zIndex: 1 }}>
+
+        <Image
+          source={require('../../assets/images/cat_with_pink_ball.png')}
+          style={{
+            height: Dimensions.get('screen').height * 0.06,
+            width: Dimensions.get('screen').width * 0.18,
+            marginBottom: 15
+          }}
+          resizeMode="contain"
+        />
+
+
+        <H1 baseSize={25} className="text-left mb-[0.5rem]">Login</H1>
+        <H2 baseSize={12} className="text-left mb-[2rem]">You&apos;re back, we've missed you!</H2>
+
+        {/* Email Address */}
+        <P>Email Address</P>
+        <TextLineInput
+          placeholder="JennaSmith@gmail.com"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+
+        {/* Password */}
+        <P className="mt-[1rem]">Password</P>
+        <View style={styles.passwordWrapper}>
           <TextLineInput
-            placeholder="Password"
-            secureTextEntry={true}
+            placeholder="***********"
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
-          />
+            style={styles.passwordInput}
 
-          <Button
-            title={isLoading ? 'Signing in...' : 'Sign In'}
-            onPress={handleLogin}
-            disabled={isLoading}
           />
-
-          <Button
-            title="Don't have an account? Sign Up"
-            onPress={navigateToSignUp}
-            disabled={isLoading}
-          />
-
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            activeOpacity={0.7}
+          >
+            <Image className = "eyeImage"
+              source={require('../../assets/images/eye.png')}
+              style={styles.eyeImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </View>
+
+        {/* Forgot Password */}
+        <TouchableOpacity
+          onPress={handleForgotPassword}
+          activeOpacity={0.7}
+        >
+
+        <View style={{ height: Dimensions.get('window').height * 0.02 }} />
+
+        <P>Forgot password?</P>
+        </TouchableOpacity>
+
+        <View style={{ height: Dimensions.get('window').height * 0.06 }} />
+
+        {/* Login Button */}
+        <Button
+          title={isLoading ? 'Signing in...' : 'Login'}
+          onPress={handleLogin}
+          disabled={isLoading}
+        />
       </View>
-    </LinearGradient>
+
+      <PopupMessage
+        visible={popup.visible}
+        title={popup.title}
+        message={popup.message}
+        type={popup.type}
+        onClose={hidePopup}
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  passwordWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+  passwordInput: {
+    paddingRight: 40,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 0,
+    top: 8,
+    padding: 4,
+  },
+  eyeImage: {
+    width: 24,
+    height: 24,
+    paddingBottom: 8,
+  },
+});

@@ -5,6 +5,7 @@ import { Dimensions, ScrollView, TextInput, TouchableOpacity, View } from "react
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import PopupMessage from '../../components/PopupMessage';
 import { Button, H3, H4, P } from '../../components/typography';
+import { supabase } from '../../utils/supabase';
 
 interface SetData {
   reps: string;

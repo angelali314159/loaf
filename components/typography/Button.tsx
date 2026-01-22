@@ -11,6 +11,8 @@ In your code, declare the Button component like this:
   style={{ custom styles for the button container }} // optional
   textStyle={{ custom styles for the button text }} // optional
   width="100%" // optional, default is '100%' (can also use a number like 300)
+  height={50} // optional, can be number or DimensionValue
+  fontSize={16} // optional, default is 16
 />
 */
 
@@ -33,6 +35,8 @@ interface ButtonProps {
   textStyle?: TextStyle;
   className?: string;
   width?: DimensionValue;
+  height?: DimensionValue;
+  fontSize?: number;
 }
 
 const BG_MAP: Record<string, string> = {
@@ -62,7 +66,9 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   className,
-  width = '100%' as DimensionValue
+  width = '100%' as DimensionValue,
+  height,
+  fontSize = 16
 }) => {
   const backgroundColor = BG_MAP[color] ?? BG_MAP.yellow;
   const colorValue = FONT_MAP[fontColor] ?? FONT_MAP.blue;
@@ -78,6 +84,7 @@ export const Button: React.FC<ButtonProps> = ({
         {
           alignSelf: 'center',
           width,
+          height,
           maxWidth: 420,
           paddingVertical: 14,
           paddingHorizontal: 20,
@@ -98,7 +105,7 @@ export const Button: React.FC<ButtonProps> = ({
         style={[
           {
             color: colorValue,
-            fontSize: 16,
+            fontSize,
             fontWeight: '600',
           },
           textStyle,

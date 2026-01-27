@@ -39,7 +39,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="workouts"
+        name="workoutList"
         options={{
           title: "Workouts",
           tabBarIcon: ({ color }) => <Dumbbell color={color} />,
@@ -48,7 +48,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: "Stats",
+          title: "help",
           tabBarIcon: ({ color }) => <TrendingUp color={color} />,
         }}
       />
@@ -109,6 +109,18 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="workoutComplete"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="postWorkout"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="createWorkout"
         options={{
           href: null, // This hides the tab
         }}

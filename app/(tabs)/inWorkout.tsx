@@ -1,11 +1,17 @@
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, ScrollView, TextInput, TouchableOpacity, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Dimensions,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import PopupMessage from '../../components/PopupMessage';
-import { Button, H3, H4, P } from '../../components/typography';
-import { supabase } from '../../utils/supabase';
+import ExerciseList from "../../components/ExerciseList";
+import PopupMessage from "../../components/PopupMessage";
+import { Button, H3, H4, P } from "../../components/typography";
 
 interface SetData {
   reps: string;
@@ -14,130 +20,193 @@ interface SetData {
 }
 
 interface ExerciseData {
+  exercise_lib_id: number;
   name: string;
   sets: SetData[];
 }
 
 function getTodayDateStr() {
   const d = new Date();
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-// TODO: REPLACE WITH ACTUAL WORKOUT DATA
-const dummyExercises: ExerciseData[] = [
-  {
-    name: "Bicep Curls",
-    sets: [
-      { reps: "10", lbs: "15", checked: false },
-      { reps: "8", lbs: "15", checked: false },
-    ],
-  },
-  {
-    name: "Push-ups",
-    sets: [
-      { reps: "12", lbs: "0", checked: false },
-      { reps: "10", lbs: "0", checked: false },
-    ],
-  },
-];
-
 export default function InWorkout() {
+  const params = useLocalSearchParams();
+  const workoutId = params.workoutId as string;
+  const workoutName = params.workoutName as string;
+  const passedExercises = params.exercises as string;
+
   // Timer state
   const [seconds, setSeconds] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Exercises state
-  const [exercises, setExercises] = useState<ExerciseData[]>(dummyExercises);
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Popup state
   const [showPopup, setShowPopup] = useState(false);
+  const [showExerciseList, setShowExerciseList] = useState(false);
 
   // Router for navigation
   const router = useRouter();
 
+  // Fetch workout data
+  useEffect(() => {
+    loadWorkoutData();
+  }, [workoutId, passedExercises]);
+
+  const loadWorkoutData = () => {
+    // Handle new/empty workout
+    if (workoutId === "new") {
+      setExercises([]);
+      setLoading(false);
+      return;
+    }
+
+    // Use passed exercises data
+    if (passedExercises) {
+      try {
+        const parsed = JSON.parse(passedExercises);
+        const formattedExercises: ExerciseData[] = parsed.map((item: any) => ({
+          exercise_lib_id: item.exercise_lib_id,
+          name: item.name,
+          sets: [
+            { reps: "", lbs: "", checked: false },
+            { reps: "", lbs: "", checked: false },
+            { reps: "", lbs: "", checked: false },
+          ],
+        }));
+
+        console.log(
+          "Loaded exercises from params:",
+          JSON.stringify(formattedExercises, null, 2),
+        );
+        setExercises(formattedExercises);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error parsing exercises:", error);
+        setExercises([]);
+        setLoading(false);
+      }
+    } else {
+      console.warn("No exercises data passed to inWorkout");
+      setExercises([]);
+      setLoading(false);
+    }
+  };
+
   // Stats
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-  const totalLbs = exercises.reduce((sum, ex) => 
-    sum + ex.sets.reduce((s, set) => 
-      s + (Number(set.reps || 0) * Number(set.lbs || 0)), 0
-    ), 0
+  const totalLbs = exercises.reduce(
+    (sum, ex) =>
+      sum +
+      ex.sets.reduce(
+        (s, set) => s + Number(set.reps || 0) * Number(set.lbs || 0),
+        0,
+      ),
+    0,
   );
 
   // Timer effect
   useEffect(() => {
-    timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000);
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
   const formatTime = (secs: number) => {
-    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
-    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
+    const h = Math.floor(secs / 3600)
+      .toString()
+      .padStart(2, "0");
+    const m = Math.floor((secs % 3600) / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
     return `${h}:${m}:${s}`;
   };
 
   // Handlers
   const handleCheckSet = (exIdx: number, setIdx: number) => {
-    setExercises(prev =>
+    setExercises((prev) =>
       prev.map((ex, i) =>
         i === exIdx
           ? {
               ...ex,
               sets: ex.sets.map((set, j) =>
-                j === setIdx ? { ...set, checked: !set.checked } : set
+                j === setIdx ? { ...set, checked: !set.checked } : set,
               ),
             }
-          : ex
-      )
+          : ex,
+      ),
     );
   };
 
-  const handleChangeSet = (exIdx: number, setIdx: number, field: 'reps' | 'lbs', value: string) => {
-    setExercises(prev =>
+  const handleChangeSet = (
+    exIdx: number,
+    setIdx: number,
+    field: "reps" | "lbs",
+    value: string,
+  ) => {
+    setExercises((prev) =>
       prev.map((ex, i) =>
         i === exIdx
           ? {
               ...ex,
               sets: ex.sets.map((set, j) =>
-                j === setIdx ? { ...set, [field]: value } : set
+                j === setIdx ? { ...set, [field]: value } : set,
               ),
             }
-          : ex
-      )
+          : ex,
+      ),
     );
   };
 
   const handleAddSet = (exIdx: number) => {
-    setExercises(prev =>
+    setExercises((prev) =>
       prev.map((ex, i) =>
         i === exIdx
           ? { ...ex, sets: [...ex.sets, { reps: "", lbs: "", checked: false }] }
-          : ex
-      )
+          : ex,
+      ),
     );
   };
 
   const handleRemoveSet = (exIdx: number, setIdx: number) => {
-    setExercises(prev =>
+    setExercises((prev) =>
       prev.map((ex, i) =>
         i === exIdx
           ? { ...ex, sets: ex.sets.filter((_, j) => j !== setIdx) }
-          : ex
-      )
+          : ex,
+      ),
     );
   };
 
   const handleAddExercise = () => {
-    setExercises(prev => [
+    setShowExerciseList(true);
+  };
+
+  const handleSelectExercise = (exercise: any) => {
+    setExercises((prev) => [
       ...prev,
-      { name: `Exercise ${prev.length + 1}`, sets: [{ reps: "", lbs: "", checked: false }] },
+      {
+        exercise_lib_id: exercise.exercise_lib_id,
+        name: exercise.name,
+        sets: [{ reps: "", lbs: "", checked: false }],
+      },
     ]);
+    setShowExerciseList(false);
   };
 
   const handleFinishWorkout = () => {
     // Check if all sets are completed
-    const allSetsCompleted = exercises.every(exercise =>
-      exercise.sets.every(set => set.checked)
+    const allSetsCompleted = exercises.every((exercise) =>
+      exercise.sets.every((set) => set.checked),
     );
 
     if (!allSetsCompleted) {
@@ -145,15 +214,49 @@ export default function InWorkout() {
       return;
     }
 
-    // Navigate to workout complete page
-    router.push('/(tabs)/workoutComplete');
+    // Calculate workout stats
+    const totalReps = exercises.reduce(
+      (sum, ex) =>
+        sum + ex.sets.reduce((s, set) => s + Number(set.reps || 0), 0),
+      0,
+    );
+
+    const workoutData = {
+      workoutName: workoutName || "Workout",
+      duration: seconds,
+      exercises: exercises.length,
+      sets: totalSets,
+      totalReps: totalReps,
+      weightLifted: totalLbs,
+    };
+
+    // Navigate to workout complete page with data
+    router.push({
+      pathname: "/(tabs)/workoutComplete",
+      params: {
+        workoutData: JSON.stringify(workoutData),
+      },
+    });
   };
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <P>Loading workout...</P>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
-        <Svg height={Dimensions.get('screen').height * .5} width={Dimensions.get('screen').width}>
+      <View
+        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
+      >
+        <Svg
+          height={Dimensions.get("screen").height * 0.5}
+          width={Dimensions.get("screen").width}
+        >
           <Defs>
             <RadialGradient
               id="topSemiCircle"
@@ -163,17 +266,19 @@ export default function InWorkout() {
               ry="70%" //vertical radius
               gradientUnits="objectBoundingBox"
             >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={.1} />
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
             </RadialGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
         </Svg>
       </View>
-        
+
       {/* Top Section: Header */}
       <View className="px-6 pt-10 pb-6" style={{ marginTop: 20 }}>
-        <H3 baseSize={20} className="mb-4">{getTodayDateStr()} Workout</H3>
+        <H3 baseSize={20} className="mb-4">
+          {getTodayDateStr()} Workout
+        </H3>
         {/* Stats Row */}
         <View className="flex-row items-stretch mb-4 mt-5">
           {/* Duration */}
@@ -218,78 +323,116 @@ export default function InWorkout() {
         </View>
       </View>
 
-
       {/* Bottom Section: Exercises - SCROLLABLE */}
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={true}>
-        {exercises.map((exercise, exIdx) => (
-          <View key={exIdx} className="mb-2 p-4">
-            <H4 baseSize={16}className="mb-3">{exercise.name}</H4>
-            {/* Table Header */}
-            <View className="flex-row pb-2 mb-1">
-              <View className="flex-1"><P className="text-center">Set</P></View>
-              <View className="flex-1 pl-2"><P className="text-center">Reps</P></View>
-              <View className="flex-1 pl-2"><P className="text-center">Ibs</P></View>
-              <View className="w-12"/>
-              <View className="w-10" />
-            </View>
-            {/* Sets Rows */}
-            {exercise.sets.map((set, setIdx) => (
-              <View key={setIdx} className="flex-row items-center py-2">
-                <View className="flex-1"><P className="text-center">{setIdx + 1}</P></View>
-                <View className="flex-1 pl-2">
-                  <TextInput
-                    className="h-8 text-center text-[#565656]"
-                    style={{ fontFamily: 'Inter_Regular' }}
-                    value={set.reps}
-                    onChangeText={v => handleChangeSet(exIdx, setIdx, 'reps', v)}
-                    placeholder="-"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric" //only numeric input
-                    underlineColorAndroid="transparent"
-                  />
-                </View>
-                <View className="flex-1 pl-2">
-                  <TextInput
-                    className="h-8 text-center text-[#565656]"
-                    style={{ fontFamily: 'Inter_Regular' }}
-                    value={set.lbs}
-                    onChangeText={v => handleChangeSet(exIdx, setIdx, 'lbs', v)}
-                    placeholder="-"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric" //only numeric input
-                    underlineColorAndroid="transparent"
-                  />
-                </View>
-                <View className="w-12 items-center">
-                  <TouchableOpacity onPress={() => handleCheckSet(exIdx, setIdx)}>
-                    <Feather
-                      name={set.checked ? "check-square" : "square"}
-                      size={24}
-                      color="#32393d"
-                    />
-                  </TouchableOpacity>
-                </View>
-                <View className="w-10 items-center">
-                  <TouchableOpacity onPress={() => handleRemoveSet(exIdx, setIdx)}>
-                    <Feather name="minus" size={20} color="#DD6C6A" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-            {/* Add Set Button */}
-            <View className="flex-row mt-2">
-              <TouchableOpacity
-                className="flex-row items-center"
-                onPress={() => handleAddSet(exIdx)}
-              >
-                <Feather name="plus" size={20} color="#32393d" />
-                <P className="ml-1 text-[#32393d]">Add Set</P>
-              </TouchableOpacity>
-            </View>
-            <View className="h-px bg-[#DADADA] mt-4" />
+        {exercises.length === 0 ? (
+          <View className="items-center justify-center py-8">
+            <P className="text-[#32393d] text-center mb-4">
+              No exercises yet.{"\n"}Add your first exercise!
+            </P>
+            <TouchableOpacity
+              className="bg-[#FCDE8C] rounded-lg px-6 py-3"
+              onPress={handleAddExercise}
+            >
+              <P className="text-[#32393d] font-bold">Add Exercise</P>
+            </TouchableOpacity>
           </View>
-        ))}
+        ) : (
+          exercises.map((exercise, exIdx) => (
+            <View key={exIdx} className="mb-2 p-4">
+              <H4 baseSize={16} className="mb-3">
+                {exercise.name}
+              </H4>
+              {/* Table Header */}
+              <View className="flex-row pb-2 mb-1">
+                <View className="flex-1">
+                  <P className="text-center">Set</P>
+                </View>
+                <View className="flex-1 pl-2">
+                  <P className="text-center">Reps</P>
+                </View>
+                <View className="flex-1 pl-2">
+                  <P className="text-center">Ibs</P>
+                </View>
+                <View className="w-12" />
+                <View className="w-10" />
+              </View>
+              {/* Sets Rows */}
+              {exercise.sets.map((set, setIdx) => (
+                <View key={setIdx} className="flex-row items-center py-2">
+                  <View className="flex-1">
+                    <P className="text-center">{setIdx + 1}</P>
+                  </View>
+                  <View className="flex-1 pl-2">
+                    <TextInput
+                      className="h-8 text-center text-[#565656]"
+                      style={{ fontFamily: "Inter_Regular" }}
+                      value={set.reps}
+                      onChangeText={(v) =>
+                        handleChangeSet(exIdx, setIdx, "reps", v)
+                      }
+                      placeholder="-"
+                      placeholderTextColor="#999"
+                      keyboardType="numeric" //only numeric input
+                      underlineColorAndroid="transparent"
+                    />
+                  </View>
+                  <View className="flex-1 pl-2">
+                    <TextInput
+                      className="h-8 text-center text-[#565656]"
+                      style={{ fontFamily: "Inter_Regular" }}
+                      value={set.lbs}
+                      onChangeText={(v) =>
+                        handleChangeSet(exIdx, setIdx, "lbs", v)
+                      }
+                      placeholder="-"
+                      placeholderTextColor="#999"
+                      keyboardType="numeric" //only numeric input
+                      underlineColorAndroid="transparent"
+                    />
+                  </View>
+                  <View className="w-12 items-center">
+                    <TouchableOpacity
+                      onPress={() => handleCheckSet(exIdx, setIdx)}
+                    >
+                      <Feather
+                        name={set.checked ? "check-square" : "square"}
+                        size={24}
+                        color="#32393d"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View className="w-10 items-center">
+                    <TouchableOpacity
+                      onPress={() => handleRemoveSet(exIdx, setIdx)}
+                    >
+                      <Feather name="minus" size={20} color="#DD6C6A" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+              {/* Add Set Button */}
+              <View className="flex-row mt-2">
+                <TouchableOpacity
+                  className="flex-row items-center"
+                  onPress={() => handleAddSet(exIdx)}
+                >
+                  <Feather name="plus" size={20} color="#32393d" />
+                  <P className="ml-1 text-[#32393d]">Add Set</P>
+                </TouchableOpacity>
+              </View>
+              <View className="h-px bg-[#DADADA] mt-4" />
+            </View>
+          ))
+        )}
       </ScrollView>
+
+      {/* Exercise List Modal */}
+      <ExerciseList
+        visible={showExerciseList}
+        onClose={() => setShowExerciseList(false)}
+        onSelectExercise={handleSelectExercise}
+      />
 
       {/* Popup Message */}
       <PopupMessage

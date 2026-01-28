@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { View } from "react-native";
-import { Button } from "../../components/typography";
+import { Button, H1 } from "../../components/typography";
 
 export default function WorkoutComplete() {
   const params = useLocalSearchParams();
@@ -16,7 +16,7 @@ export default function WorkoutComplete() {
 
   return (
     <View>
-      <h1>Workout Complete</h1>
+      <H1>Workout Complete</H1>
       <Button title="Share Workout" onPress={handleShareWorkout} />
       <Button
         title="Go to Home"

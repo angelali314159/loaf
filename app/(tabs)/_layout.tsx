@@ -2,8 +2,10 @@ import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Tabs } from "expo-router";
 import { Dumbbell, House, TrendingUp, UserRound } from "lucide-react-native";
 import React from "react";
-import { Platform } from "react-native";
+import { Dimensions, Platform } from "react-native";
 import TabBarItem from "../../components/ui/TabBarItem";
+
+const { width, height } = Dimensions.get("window");
 
 export default function TabLayout() {
   return (
@@ -18,10 +20,10 @@ export default function TabLayout() {
           default: {
             position: "absolute",
             backgroundColor: "transparent", // Make background transparent for overlay effect
-            borderRadius: 50, // Oval shape
-            marginHorizontal: 20, // Add some margin from edges
-            marginBottom: 40, // Lift it up from bottom
-            height: 70, // Make it taller for better oval shape
+            borderRadius: width * 0.13, // Oval shape
+            marginHorizontal: width * 0.02, // Add some margin from edges
+            marginBottom: height * 0.05, // Lift it up from bottom
+            height: height * 0.09, // Make it taller for better oval shape
             borderTopWidth: 0, // Remove default border
           },
         }),

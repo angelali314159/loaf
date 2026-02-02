@@ -330,12 +330,12 @@ export default function InWorkout() {
             <P className="text-[#32393d] text-center mb-4">
               No exercises yet.{"\n"}Add your first exercise!
             </P>
-            <TouchableOpacity
-              className="bg-[#FCDE8C] rounded-lg px-6 py-3"
+            <Button
+              title="Add Exercise"
               onPress={handleAddExercise}
-            >
-              <P className="text-[#32393d] font-bold">Add Exercise</P>
-            </TouchableOpacity>
+              color="yellow"
+              fontColor="blue"
+            />
           </View>
         ) : (
           exercises.map((exercise, exIdx) => (

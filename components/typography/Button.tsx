@@ -16,21 +16,27 @@ In your code, declare the Button component like this:
 />
 */
 
+import React from "react";
 
-import React from 'react';
-
-import { DimensionValue, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
+import {
+  Dimensions,
+  DimensionValue,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native";
 
 interface ButtonProps {
   title: string;
   onPress: () => void;
   disabled?: boolean;
   /** background color key: 'blue' -> #2D3541, 'yellow' -> #fcde8c */
-  color?: 'blue' | 'yellow';
+  color?: "blue" | "yellow";
   /** font color key: 'blue' | 'yellow' | 'white' */
-  fontColor?: 'blue' | 'yellow' | 'white';
+  fontColor?: "blue" | "yellow" | "white";
   /** border color key: 'blue' | 'yellow' | 'white' */
-  borderColor?: 'blue' | 'yellow' | 'white';
+  borderColor?: "blue" | "yellow" | "white";
   style?: ViewStyle;
   textStyle?: TextStyle;
   className?: string;
@@ -40,39 +46,51 @@ interface ButtonProps {
 }
 
 const BG_MAP: Record<string, string> = {
-  blue: '#2D3541',
-  yellow: '#fcde8c',
+  blue: "#2D3541",
+  yellow: "#fcde8c",
 };
 
 const FONT_MAP: Record<string, string> = {
-  blue: '#2D3541',
-  yellow: '#fcde8c',
-  white: '#FFFFFF',
+  blue: "#2D3541",
+  yellow: "#fcde8c",
+  white: "#FFFFFF",
 };
 
 const BORDER_MAP: Record<string, string> = {
-  blue: '#2D3541',
-  yellow: '#fcde8c',
-  white: '#FFFFFF',
+  blue: "#2D3541",
+  yellow: "#fcde8c",
+  white: "#FFFFFF",
 };
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Scale function for responsive sizing
+const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
 
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
   disabled = false,
-  color = 'yellow',
-  fontColor = 'blue',
+  color = "yellow",
+  fontColor = "blue",
   borderColor,
   style,
   textStyle,
   className,
-  width = '100%' as DimensionValue,
+  width = "100%" as DimensionValue,
   height,
-  fontSize = 16
+  fontSize = 16,
 }) => {
   const backgroundColor = BG_MAP[color] ?? BG_MAP.yellow;
   const colorValue = FONT_MAP[fontColor] ?? FONT_MAP.blue;
   const borderColorValue = borderColor ? BORDER_MAP[borderColor] : undefined;
+
+  // Calculate responsive sizes
+  const responsiveFontSize = scale(fontSize);
+  const responsivePaddingVertical = scale(14);
+  const responsivePaddingHorizontal = scale(20);
+  const responsiveHeight = height ?? scale(50);
+  const responsiveMinHeight = scale(48);
 
   return (
     <TouchableOpacity
@@ -82,18 +100,19 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.8}
       style={[
         {
-          alignSelf: 'center',
+          alignSelf: "center",
           width,
-          height,
+          height: responsiveHeight,
+          minHeight: responsiveMinHeight,
           maxWidth: 420,
-          paddingVertical: 14,
-          paddingHorizontal: 20,
+          paddingVertical: responsivePaddingVertical,
+          paddingHorizontal: responsivePaddingHorizontal,
           borderRadius: 999,
           backgroundColor,
           borderWidth: borderColorValue ? 2 : 0,
           borderColor: borderColorValue,
-          justifyContent: 'center',
-          alignItems: 'center',
+          justifyContent: "center",
+          alignItems: "center",
           marginVertical: 10,
           elevation: 3,
           opacity: disabled ? 0.6 : 1,
@@ -105,8 +124,8 @@ export const Button: React.FC<ButtonProps> = ({
         style={[
           {
             color: colorValue,
-            fontSize,
-            fontWeight: '600',
+            fontSize: responsiveFontSize,
+            fontWeight: "600",
           },
           textStyle,
         ]}

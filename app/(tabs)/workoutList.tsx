@@ -1,5 +1,5 @@
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { Dices, Plus } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Dimensions, ScrollView, TouchableOpacity, View } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
@@ -131,7 +131,7 @@ export default function WorkoutList() {
             <RadialGradient
               id="topSemiCircle"
               cx="50%" //centered horizontally
-              cy="-10%" //top edge
+              cy="0%" //top edge
               rx="150%" //horiztonal radius
               ry="70%" //vertical radius
               gradientUnits="objectBoundingBox"
@@ -144,28 +144,42 @@ export default function WorkoutList() {
         </Svg>
       </View>
 
-      <ScrollView
-        className="flex-1 mx-8"
-        contentContainerStyle={{ paddingBottom: height * 0.1 }}
-      >
+      {/* Static Header Section */}
+      <View className="mx-8">
         {/* Dice and Plus buttons*/}
         <View className="flex-row justify-end mt-20">
           <TouchableOpacity
             className="p-2 mr-2"
             onPress={() => router.push("/(tabs)/generateWorkout")}
           >
-            <Dices size={height * 0.035} color="#32393d" />
+            <Feather name="shuffle" size={height * 0.035} color="#32393d" />
           </TouchableOpacity>
 
           <TouchableOpacity
             className="p-2"
             onPress={() => router.push("/(tabs)/createWorkout")}
           >
-            <Plus size={height * 0.035} color="#32393d" />
+            <Feather name="plus" size={height * 0.035} color="#32393d" />
           </TouchableOpacity>
         </View>
 
-        {/* Workout List */}
+        <H3 className="mb-2" baseSize={14}>
+          My Workouts
+        </H3>
+        <Button
+          title="Start Empty Workout"
+          onPress={startEmptyWorkout}
+          fontSize={12}
+          height={20}
+          style={{ marginBottom: 20 }}
+        />
+      </View>
+
+      {/* Scrollable Workout List */}
+      <ScrollView
+        className="flex-1 mx-8"
+        contentContainerStyle={{ paddingBottom: height * 0.1 }}
+      >
         <View className="mb-8">
           {loading ? (
             <View className="items-center justify-center py-8">
@@ -173,20 +187,12 @@ export default function WorkoutList() {
             </View>
           ) : (
             <>
-              <H3 className="mb-2" baseSize={14}>
-                My Workouts
-              </H3>
-              <Button
-                title="Start Empty Workout"
-                onPress={startEmptyWorkout}
-                fontSize={12}
-                height={20}
-                style={{ marginBottom: 20 }}
-              />
-
               {/* Existing Workouts */}
               {workoutPlans.length === 0 ? (
-                <P className="text-[#32393d] text-center text-lg">
+                <P
+                  className="text-[#32393d] text-center text-lg "
+                  style={{ marginTop: height * 0.2 }}
+                >
                   No saved workouts yet.{"\n"}Create your first workout plan by
                   pressing the + button.
                 </P>

@@ -144,81 +144,93 @@ export default function WorkoutList() {
         </Svg>
       </View>
 
-      <View>
-        <ScrollView className="flex-1 mx-4">
-          {/* Dice and Plus buttons*/}
-          <View className="flex-row justify-end mt-20">
-            <TouchableOpacity
-              className="p-2 mr-2"
-              onPress={() => router.push("/(tabs)/generateWorkout")}
-            >
-              <Dices size={24} color="#32393d" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="p-2"
-              onPress={() => router.push("/(tabs)/createWorkout")}
-            >
-              <Plus size={24} color="#32393d" />
-            </TouchableOpacity>
-          </View>
+      <ScrollView
+        className="flex-1 mx-8"
+        contentContainerStyle={{ paddingBottom: height * 0.1 }}
+      >
+        {/* Dice and Plus buttons*/}
+        <View className="flex-row justify-end mt-20">
+          <TouchableOpacity
+            className="p-2 mr-2"
+            onPress={() => router.push("/(tabs)/generateWorkout")}
+          >
+            <Dices size={height * 0.035} color="#32393d" />
+          </TouchableOpacity>
 
-          {/* Workout List */}
-          <View className="mb-8">
-            {loading ? (
-              <View className="items-center justify-center py-8">
-                <P className="text-black">Loading workouts...</P>
-              </View>
-            ) : (
-              <>
-                <H3>My Workouts</H3>
-                <Button
-                  title="Start Empty Workout"
-                  onPress={startEmptyWorkout}
-                />
+          <TouchableOpacity
+            className="p-2"
+            onPress={() => router.push("/(tabs)/createWorkout")}
+          >
+            <Plus size={height * 0.035} color="#32393d" />
+          </TouchableOpacity>
+        </View>
 
-                {/* Existing Workouts */}
-                {workoutPlans.length === 0 ? (
-                  <P className="text-[#32393d] text-center text-lg">
-                    No saved workouts yet.{"\n"}Create your first workout plan
-                    by pressing the + button.
-                  </P>
-                ) : (
-                  workoutPlans.map((item) => (
-                    <TouchableOpacity
-                      key={item.workout_id}
-                      onPress={() => handlePreviewWorkout(item)}
-                      className="mb-4 pb-4 border-b border-[#32393d]/20"
-                    >
-                      <View className="flex-row justify-between items-start">
-                        <View className="flex-1 mr-4">
-                          <P className="text-[#32393d] text-lg font-bold mb-1">
-                            {item.workout_name}
-                          </P>
-                          <P className="text-[#32393d]/70 text-sm">
-                            {item.exercises
-                              .slice(0, 2)
-                              .map((ex) => ex.name)
-                              .join(", ")}
-                            {item.exercises.length > 2 &&
-                              ` +${item.exercises.length - 2} more`}
-                          </P>
-                        </View>
-                        <Button
-                          title="Start"
-                          width="10%"
-                          onPress={() => {
-                            navigateToWorkout(item);
-                          }}
-                        />
+        {/* Workout List */}
+        <View className="mb-8">
+          {loading ? (
+            <View className="items-center justify-center py-8">
+              <P className="text-black">Loading workouts...</P>
+            </View>
+          ) : (
+            <>
+              <H3 className="mb-2" baseSize={14}>
+                My Workouts
+              </H3>
+              <Button
+                title="Start Empty Workout"
+                onPress={startEmptyWorkout}
+                fontSize={12}
+                height={20}
+                style={{ marginBottom: 20 }}
+              />
+
+              {/* Existing Workouts */}
+              {workoutPlans.length === 0 ? (
+                <P className="text-[#32393d] text-center text-lg">
+                  No saved workouts yet.{"\n"}Create your first workout plan by
+                  pressing the + button.
+                </P>
+              ) : (
+                workoutPlans.map((item) => (
+                  <TouchableOpacity
+                    key={item.workout_id}
+                    onPress={() => handlePreviewWorkout(item)}
+                    className="mt-2 mb-2 pb-4 border-b border-[#32393d]/20"
+                  >
+                    <View className="flex-row justify-between items-start">
+                      <View className="flex-1 mr-4">
+                        <P
+                          className="text-[#32393d]"
+                          style={{ fontWeight: "600" }}
+                        >
+                          {item.workout_name}
+                        </P>
+                        <P className="text-[#565656]">
+                          {item.exercises
+                            .slice(0, 2)
+                            .map((ex) => ex.name)
+                            .join(", ")}
+                          {item.exercises.length > 2 &&
+                            `, +${item.exercises.length - 2} more`}
+                        </P>
                       </View>
-                    </TouchableOpacity>
-                  ))
-                )}
-              </>
-            )}
-          </View>
-        </ScrollView>
-      </View>
+                      <Button
+                        title="Start"
+                        width="18%"
+                        fontSize={12}
+                        height={8}
+                        onPress={() => {
+                          navigateToWorkout(item);
+                        }}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </>
+          )}
+        </View>
+      </ScrollView>
 
       {/* Workout Preview Modal */}
       {selectedWorkout && (

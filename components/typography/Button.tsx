@@ -10,8 +10,8 @@ In your code, declare the Button component like this:
   borderColor="white" // optional
   style={{ custom styles for the button container }} // optional
   textStyle={{ custom styles for the button text }} // optional
-  width="100%" // optional, default is '100%' (can also use a number like 300)
-  height={50} // optional, can be number or DimensionValue
+  width="100%" // optional, default is '100%' (can be DimensionValue)
+  height={50} // optional, can be DimensionValue
   fontSize={16} // optional, default is 16
 />
 */
@@ -64,7 +64,6 @@ const BORDER_MAP: Record<string, string> = {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-// Scale function for responsive sizing
 const scale = (size: number) => (SCREEN_WIDTH / 375) * size;
 
 export const Button: React.FC<ButtonProps> = ({
@@ -87,10 +86,10 @@ export const Button: React.FC<ButtonProps> = ({
 
   // Calculate responsive sizes
   const responsiveFontSize = scale(fontSize);
-  const responsivePaddingVertical = scale(14);
-  const responsivePaddingHorizontal = scale(20);
+  const responsivePaddingVertical = scale(fontSize * 0.625);
+  const responsivePaddingHorizontal = scale(fontSize * 1);
   const responsiveHeight = height ?? scale(50);
-  const responsiveMinHeight = scale(48);
+  const responsiveMinHeight = scale(35);
 
   return (
     <TouchableOpacity

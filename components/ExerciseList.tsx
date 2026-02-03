@@ -293,7 +293,10 @@ export default function ExerciseList({
             )}
 
             {/* Exercise List */}
-            <ScrollView className="flex-1 px-6 pb-24">
+            <ScrollView
+              className="flex-1 px-6"
+              contentContainerStyle={{ paddingBottom: 100 }}
+            >
               {loading ? (
                 <View className="items-center justify-center py-8">
                   <P className="text-[#32393d]">Loading exercises...</P>
@@ -384,7 +387,7 @@ export default function ExerciseList({
             </ScrollView>
 
             {/* Done Button - Fixed at bottom */}
-            <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-[#32393d]/20">
+            <View className="p-6 bg-white border-t border-[#32393d]/20">
               <TouchableOpacity
                 className="bg-[#32393d] rounded-lg py-4 items-center"
                 onPress={onClose}

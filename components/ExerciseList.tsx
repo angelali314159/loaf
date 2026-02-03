@@ -1,12 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../utils/supabase";
 import { H2, H3, P } from "./typography";
@@ -156,7 +157,10 @@ export default function ExerciseList({
 
   const handleSelectExercise = (exercise: Exercise) => {
     onSelectExercise(exercise);
-    // Don't close the modal anymore
+    router.push({
+      pathname: "/(tabs)/exercisePreview",
+      params: { exerciseName: exercise.name },
+    });
   };
 
   return (

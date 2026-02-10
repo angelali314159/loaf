@@ -1,11 +1,10 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { ScrollView, TextInput, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
-import { Button, H1, H2, P } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -16,11 +15,36 @@ interface Exercise {
   equipment: string | null;
 }
 
+type SetRow = {
+  setNumber: number;
+  reps: number;
+  lbs: number;
+  done: boolean;
+};
+
+type ExerciseBlock = {
+  exercise: Exercise;
+  sets: SetRow[]; // <-- starts EMPTY (no defaults)
+};
+
+function formatHMS(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
 export default function CreateWorkout() {
   const { user } = useAuth();
-  const [workoutName, setWorkoutName] = useState("");
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
+
+  const [workoutName, setWorkoutName] = useState("11/1/25 Workout");
+  const [exerciseBlocks, setExerciseBlocks] = useState<ExerciseBlock[]>([]);
   const [showExerciseList, setShowExerciseList] = useState(false);
+
+  // (UI only) so the screenshot style has a value
+  const [durationSeconds] = useState(1);
+
   const [saving, setSaving] = useState(false);
 
   // Popup states
@@ -32,52 +56,107 @@ export default function CreateWorkout() {
     onClose: () => {},
   });
 
-  const handleAddExercises = () => {
-    setShowExerciseList(true);
-  };
+  const selectedExercises = useMemo(
+    () => exerciseBlocks.map((b) => b.exercise),
+    [exerciseBlocks],
+  );
+
+  const totalSets = useMemo(
+    () => exerciseBlocks.reduce((sum, b) => sum + b.sets.length, 0),
+    [exerciseBlocks],
+  );
+
+  const totalLbs = useMemo(() => {
+    // sum only “done” sets (keeps it sensible with checkboxes)
+    return exerciseBlocks.reduce((sum, b) => {
+      return sum + b.sets.reduce((s2, r) => s2 + (r.done ? r.lbs : 0), 0);
+    }, 0);
+  }, [exerciseBlocks]);
+
+  const handleAddExercises = () => setShowExerciseList(true);
 
   const handleSelectExercise = (exercise: Exercise) => {
-    // Check if exercise is already selected
-    const isSelected = selectedExercises.some(
-      (ex) => ex.exercise_lib_id === exercise.exercise_lib_id,
-    );
+    setExerciseBlocks((prev) => {
+      const exists = prev.some((b) => b.exercise.exercise_lib_id === exercise.exercise_lib_id);
 
-    if (isSelected) {
-      // Remove if already selected
-      setSelectedExercises((prev) =>
-        prev.filter((ex) => ex.exercise_lib_id !== exercise.exercise_lib_id),
-      );
-    } else {
-      // Add if not selected
-      setSelectedExercises((prev) => [...prev, exercise]);
-    }
+      // ExerciseList is “toggle” behavior, so selecting again should remove
+      if (exists) {
+        return prev.filter((b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id);
+      }
+
+      // IMPORTANT: no default rows
+      return [...prev, { exercise, sets: [] }];
+    });
   };
 
-  const handleRemoveExercise = (exerciseId: number) => {
-    setSelectedExercises((prev) =>
-      prev.filter((ex) => ex.exercise_lib_id !== exerciseId),
+  const handleRemoveExercise = (exercise: Exercise) => {
+    setExerciseBlocks((prev) =>
+      prev.filter((b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id),
     );
   };
 
-  const moveExercise = (index: number, direction: "up" | "down") => {
-    if (
-      (direction === "up" && index === 0) ||
-      (direction === "down" && index === selectedExercises.length - 1)
-    ) {
-      return;
-    }
+  const addSetRow = (exerciseId: number) => {
+    setExerciseBlocks((prev) =>
+      prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        const nextNum = b.sets.length + 1;
 
-    const newExercises = [...selectedExercises];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    [newExercises[index], newExercises[targetIndex]] = [
-      newExercises[targetIndex],
-      newExercises[index],
-    ];
-    setSelectedExercises(newExercises);
+        // starting values (no “default rows” on add-exercise; but when user taps + for a set,
+        // we need *something* — use 0 so it’s not assuming)
+        const newRow: SetRow = { setNumber: nextNum, reps: 0, lbs: 0, done: false };
+
+        return { ...b, sets: [...b.sets, newRow] };
+      }),
+    );
+  };
+
+  const removeSetRow = (exerciseId: number, setNumber: number) => {
+    setExerciseBlocks((prev) =>
+      prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        const kept = b.sets.filter((r) => r.setNumber !== setNumber);
+        const renumbered = kept.map((r, idx) => ({ ...r, setNumber: idx + 1 }));
+        return { ...b, sets: renumbered };
+      }),
+    );
+  };
+
+  const toggleDone = (exerciseId: number, setNumber: number) => {
+    setExerciseBlocks((prev) =>
+      prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        return {
+          ...b,
+          sets: b.sets.map((r) =>
+            r.setNumber === setNumber ? { ...r, done: !r.done } : r,
+          ),
+        };
+      }),
+    );
+  };
+
+  const updateSetValue = (
+    exerciseId: number,
+    setNumber: number,
+    field: "reps" | "lbs",
+    value: string,
+  ) => {
+    const asNum = Number(value.replace(/[^\d]/g, "")) || 0;
+
+    setExerciseBlocks((prev) =>
+      prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        return {
+          ...b,
+          sets: b.sets.map((r) =>
+            r.setNumber === setNumber ? { ...r, [field]: asNum } : r,
+          ),
+        };
+      }),
+    );
   };
 
   const handleSaveWorkout = async () => {
-    // Validation
     if (!workoutName.trim()) {
       setPopupConfig({
         title: "Missing Information",
@@ -89,7 +168,7 @@ export default function CreateWorkout() {
       return;
     }
 
-    if (selectedExercises.length === 0) {
+    if (exerciseBlocks.length === 0) {
       setPopupConfig({
         title: "Missing Exercises",
         message: "Please add at least one exercise",
@@ -114,7 +193,6 @@ export default function CreateWorkout() {
     try {
       setSaving(true);
 
-      // Insert workout
       const { data: workout, error: workoutError } = await supabase
         .from("workouts")
         .insert({
@@ -126,10 +204,9 @@ export default function CreateWorkout() {
 
       if (workoutError) throw workoutError;
 
-      // Insert workout exercises
-      const workoutExercises = selectedExercises.map((exercise, index) => ({
+      const workoutExercises = exerciseBlocks.map((b, index) => ({
         workout_id: workout.workout_id,
-        exercise_lib_id: exercise.exercise_lib_id,
+        exercise_lib_id: b.exercise.exercise_lib_id,
         exercise_order: index + 1,
       }));
 
@@ -163,155 +240,231 @@ export default function CreateWorkout() {
     }
   };
 
+  const finishButtonIsDark = exerciseBlocks.length > 0;
+
   return (
-    <View className="flex-1 bg-[#f2f0ef]">
-      <ScrollView className="flex-1 mx-4">
-        {/* Header */}
-        <View className="mt-10 mb-6">
-          <View className="flex-row items-center mb-4">
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="mr-3 p-2"
-            >
-              <Feather name="arrow-left" size={24} color="#32393d" />
-            </TouchableOpacity>
-            <H1 className="text-[#32393d] text-4xl">Create Workout</H1>
-          </View>
-        </View>
+    <LinearGradient
+      colors={["#F6E6C1", "#F2F0EF", "#F2F0EF"]}
+      locations={[0, 0.25, 1]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="px-6 pt-16">
+          {/* Header */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <TouchableOpacity onPress={() => router.back()} className="pr-3 py-2">
+                <Feather name="arrow-left" size={26} color="#32393d" />
+              </TouchableOpacity>
 
-        {/* Workout Name Input */}
-        <View className="mb-6">
-          <H2 className="text-[#32393d] text-xl mb-3">Workout Name</H2>
-          <TextInput
-            className="bg-white rounded-lg px-4 py-3 text-[#32393d] border border-[#32393d]/20"
-            placeholder="e.g., Upper Body Day"
-            value={workoutName}
-            onChangeText={setWorkoutName}
-            placeholderTextColor="#999"
-          />
-        </View>
+              {/* Title */}
+              <Text style={{ fontSize: 34, fontWeight: "700", color: "#32393d" }}>
+                {workoutName}
+              </Text>
+            </View>
 
-        {/* Exercises Section */}
-        <View className="mb-6">
-          <View className="flex-row justify-between items-center mb-4">
-            <H2 className="text-[#32393d] text-xl">
-              Exercises ({selectedExercises.length})
-            </H2>
-            <TouchableOpacity
-              className="flex-row items-center bg-[#FCDE8C] rounded-lg px-4 py-2"
-              onPress={handleAddExercises}
-            >
-              <Feather name="plus" size={20} color="#32393d" />
-              <P className="ml-2 text-[#32393d] font-bold">Add Exercises</P>
+            <TouchableOpacity className="p-2" activeOpacity={0.8}>
+              <FontAwesome5 name="paw" size={22} color="#B9B9B9" />
             </TouchableOpacity>
           </View>
 
-          {selectedExercises.length === 0 ? (
-            <LinearGradient
-              colors={["#DDF8FE", "#ebf9fd"]}
-              locations={[0, 0.8]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              className="rounded-lg p-8 items-center justify-center"
+          {/* If you want editable title */}
+          <View className="mt-3">
+            <TextInput
+              value={workoutName}
+              onChangeText={setWorkoutName}
+              placeholder="Workout name"
+              placeholderTextColor="#9A9A9A"
+              className="text-[#32393d]"
+              style={{
+                fontSize: 14,
+                opacity: 0.0, // <-- set to 1 if you actually want the input visible
+                height: 0,
+              }}
+            />
+          </View>
+
+          {/* Stats row */}
+          <View className="mt-10 flex-row items-center justify-between">
+            <View className="flex-1 items-center">
+              <Text style={{ fontSize: 18, color: "#32393d" }}>Duration</Text>
+              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+                {formatHMS(durationSeconds)}
+              </Text>
+            </View>
+
+            <View className="h-12 w-[1px] bg-[#B9B9B9] opacity-80" />
+
+            <View className="flex-1 items-center">
+              <Text style={{ fontSize: 18, color: "#32393d" }}>lbs</Text>
+              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+                {totalLbs}
+              </Text>
+            </View>
+
+            <View className="h-12 w-[1px] bg-[#B9B9B9] opacity-80" />
+
+            <View className="flex-1 items-center">
+              <Text style={{ fontSize: 18, color: "#32393d" }}>Sets</Text>
+              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+                {totalSets}
+              </Text>
+            </View>
+          </View>
+
+          {/* Buttons */}
+          <View className="mt-10 flex-row items-center justify-between">
+            <TouchableOpacity
+              onPress={handleSaveWorkout}
+              disabled={saving}
+              activeOpacity={0.85}
+              className="flex-1 mr-4 rounded-full py-4 items-center"
+              style={{
+                backgroundColor: finishButtonIsDark ? "#2E3742" : "#E8E1CF",
+              }}
             >
-              <P className="text-[#32393d] text-center text-lg">
-                No exercises added yet.{"\n"}Tap "Add Exercises" to get started!
-              </P>
-            </LinearGradient>
-          ) : (
-            selectedExercises.map((exercise, index) => (
-              <View
-                key={exercise.exercise_lib_id}
-                className="bg-white rounded-lg p-4 mb-3 border border-[#32393d]/20"
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  color: finishButtonIsDark ? "#F6D88A" : "#32393d",
+                }}
               >
-                <View className="flex-row items-center">
-                  {/* Order Number */}
-                  <View className="w-8 h-8 rounded-full bg-[#32393d] items-center justify-center mr-3">
-                    <P className="text-white font-bold">{index + 1}</P>
-                  </View>
+                {saving ? "Saving..." : "Finish workout"}
+              </Text>
+            </TouchableOpacity>
 
-                  {/* Exercise Info */}
-                  <View className="flex-1">
-                    <P className="text-[#32393d] font-bold text-lg mb-1">
-                      {exercise.name}
-                    </P>
-                    <View className="flex-row flex-wrap gap-2">
-                      {exercise.equipment && (
-                        <View className="bg-[#DDF8FE] rounded px-2 py-1">
-                          <P className="text-[#32393d] text-xs">
-                            {exercise.equipment}
-                          </P>
-                        </View>
-                      )}
-                      {exercise.category && (
-                        <View className="bg-[#FFD3D3] rounded px-2 py-1">
-                          <P className="text-[#32393d] text-xs">
-                            {exercise.category}
-                          </P>
-                        </View>
-                      )}
+            <TouchableOpacity
+              onPress={handleAddExercises}
+              activeOpacity={0.85}
+              className="flex-1 rounded-full py-4 items-center"
+              style={{ backgroundColor: "#F6D88A" }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "700", color: "#32393d" }}>
+                Add Exercise
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Exercises */}
+          {exerciseBlocks.length > 0 && (
+            <View className="mt-10">
+              {exerciseBlocks.map((block, idx) => {
+                const isLast = idx === exerciseBlocks.length - 1;
+
+                return (
+                  <View key={block.exercise.exercise_lib_id} className="pb-4">
+                    {/* Exercise header row */}
+                    <View className="flex-row items-center justify-between">
+                      <Text style={{ fontSize: 26, fontWeight: "400", color: "#32393d" }}>
+                        {block.exercise.name}
+                      </Text>
+
+                      <TouchableOpacity
+                        onPress={() => addSetRow(block.exercise.exercise_lib_id)}
+                        className="p-2"
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="plus" size={28} color="#F6B83B" />
+                      </TouchableOpacity>
                     </View>
-                  </View>
 
-                  {/* Reorder Buttons */}
-                  <View className="flex-col gap-1 mr-2">
-                    <TouchableOpacity
-                      onPress={() => moveExercise(index, "up")}
-                      disabled={index === 0}
-                    >
-                      <Feather
-                        name="chevron-up"
-                        size={20}
-                        color={index === 0 ? "#ccc" : "#32393d"}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => moveExercise(index, "down")}
-                      disabled={index === selectedExercises.length - 1}
-                    >
-                      <Feather
-                        name="chevron-down"
-                        size={20}
-                        color={
-                          index === selectedExercises.length - 1
-                            ? "#ccc"
-                            : "#32393d"
-                        }
-                      />
-                    </TouchableOpacity>
-                  </View>
+                    {/* Table header */}
+                    <View className="mt-4 flex-row items-center">
+                      <Text style={{ width: 70, fontSize: 20, color: "#6A6A6A" }}>
+                        Sets
+                      </Text>
+                      <Text style={{ width: 90, fontSize: 20, color: "#6A6A6A" }}>
+                        Reps
+                      </Text>
+                      <Text style={{ width: 90, fontSize: 20, color: "#6A6A6A" }}>
+                        lbs
+                      </Text>
+                      <View style={{ flex: 1 }} />
+                      <View style={{ width: 30 }} />
+                    </View>
 
-                  {/* Remove Button */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      handleRemoveExercise(exercise.exercise_lib_id)
-                    }
-                  >
-                    <Feather name="x-circle" size={24} color="#DD6C6A" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+                    {/* Rows (can be empty at first) */}
+                    {block.sets.map((row) => (
+                      <View
+                        key={`${block.exercise.exercise_lib_id}-${row.setNumber}`}
+                        className="mt-4 flex-row items-center"
+                      >
+                        <Text style={{ width: 70, fontSize: 20, color: "#4D4D4D" }}>
+                          {row.setNumber}
+                        </Text>
+
+                        <TextInput
+                          value={String(row.reps)}
+                          onChangeText={(v) =>
+                            updateSetValue(block.exercise.exercise_lib_id, row.setNumber, "reps", v)
+                          }
+                          keyboardType="number-pad"
+                          className="text-[#4D4D4D]"
+                          style={{ width: 90, fontSize: 20 }}
+                        />
+
+                        <TextInput
+                          value={String(row.lbs)}
+                          onChangeText={(v) =>
+                            updateSetValue(block.exercise.exercise_lib_id, row.setNumber, "lbs", v)
+                          }
+                          keyboardType="number-pad"
+                          className="text-[#4D4D4D]"
+                          style={{ width: 90, fontSize: 20 }}
+                        />
+
+                        <View style={{ flex: 1, alignItems: "center" }}>
+                          <TouchableOpacity
+                            onPress={() => toggleDone(block.exercise.exercise_lib_id, row.setNumber)}
+                            activeOpacity={0.8}
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: 7,
+                              borderWidth: 2,
+                              borderColor: "#3A3A3A",
+                              backgroundColor: row.done ? "#F6D88A" : "transparent",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            {row.done ? <Feather name="check" size={18} color="#2E3742" /> : null}
+                          </TouchableOpacity>
+                        </View>
+
+                        <TouchableOpacity
+                          onPress={() => removeSetRow(block.exercise.exercise_lib_id, row.setNumber)}
+                          activeOpacity={0.6}
+                          style={{ width: 30, alignItems: "center" }}
+                        >
+                          <Feather name="minus" size={26} color="#6A6A6A" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+
+                    {/* Divider */}
+                    {!isLast && <View className="mt-6 h-[1px] bg-[#D2D2D2]" />}
+                  </View>
+                );
+              })}
+            </View>
           )}
-        </View>
-
-        {/* Save Button */}
-        <View className="mb-8">
-          <Button
-            title={saving ? "Saving..." : "Save Workout"}
-            onPress={handleSaveWorkout}
-            color="blue"
-            fontColor="yellow"
-            disabled={saving}
-          />
         </View>
       </ScrollView>
 
-      {/* Exercise List Modal */}
+      {/* Exercise List Modal (this is the popup when Add Exercise is pressed) */}
       <ExerciseList
         visible={showExerciseList}
         onClose={() => setShowExerciseList(false)}
         onSelectExercise={handleSelectExercise}
+        onRemoveExercise={handleRemoveExercise}
         selectedExercises={selectedExercises}
       />
 
@@ -323,6 +476,6 @@ export default function CreateWorkout() {
         type={popupConfig.type}
         onClose={popupConfig.onClose}
       />
-    </View>
+    </LinearGradient>
   );
 }

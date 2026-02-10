@@ -128,6 +128,24 @@ export default function TabLayout() {
           href: null, // This hides the tab
         }}
       />
+      <Tabs.Screen
+        name="friendSearch"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+        <Tabs.Screen
+        name="generateWorkout"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+        <Tabs.Screen
+        name="generatedPreview"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
     </Tabs>
   );
 }

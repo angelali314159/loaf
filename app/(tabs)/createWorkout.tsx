@@ -1,12 +1,20 @@
-import { Feather, FontAwesome5 } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Dimensions,
+  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 interface Exercise {
   exercise_lib_id: number;
@@ -34,6 +42,23 @@ function formatHMS(totalSeconds: number) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
+
+// Helper styles for a 5-column evenly spaced "table"
+// - Each column has equal width (flex: 1)
+// - Leftmost and rightmost align with container edges
+// - Equal gaps come naturally because each column is the same width
+const fiveColRowStyle = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  paddingLeft: 0,
+  paddingRight: 0,
+};
+
+const fiveColCellStyle = {
+  flex: 1,
+  flexBasis: 0,
+  alignItems: "center" as const,
+};
 
 export default function CreateWorkout() {
   const { user } = useAuth();
@@ -77,11 +102,14 @@ export default function CreateWorkout() {
 
   const handleSelectExercise = (exercise: Exercise) => {
     setExerciseBlocks((prev) => {
-      const exists = prev.some((b) => b.exercise.exercise_lib_id === exercise.exercise_lib_id);
+      const exists = prev.some(
+        (b) => b.exercise.exercise_lib_id === exercise.exercise_lib_id,
+      );
 
-      // ExerciseList is “toggle” behavior, so selecting again should remove
       if (exists) {
-        return prev.filter((b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id);
+        return prev.filter(
+          (b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id,
+        );
       }
 
       // IMPORTANT: no default rows
@@ -100,11 +128,7 @@ export default function CreateWorkout() {
       prev.map((b) => {
         if (b.exercise.exercise_lib_id !== exerciseId) return b;
         const nextNum = b.sets.length + 1;
-
-        // starting values (no “default rows” on add-exercise; but when user taps + for a set,
-        // we need *something* — use 0 so it’s not assuming)
         const newRow: SetRow = { setNumber: nextNum, reps: 0, lbs: 0, done: false };
-
         return { ...b, sets: [...b.sets, newRow] };
       }),
     );
@@ -243,13 +267,30 @@ export default function CreateWorkout() {
   const finishButtonIsDark = exerciseBlocks.length > 0;
 
   return (
-    <LinearGradient
-      colors={["#F6E6C1", "#F2F0EF", "#F2F0EF"]}
-      locations={[0, 0.25, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <View className="flex-1 bg-white">
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
+        <Svg
+          height={Dimensions.get("screen").height * 0.5}
+          width={Dimensions.get("screen").width}
+        >
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%"
+              cy="0%"
+              rx="150%"
+              ry="70%"
+              gradientUnits="objectBoundingBox"
+            >
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
+      </View>
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -263,18 +304,25 @@ export default function CreateWorkout() {
                 <Feather name="arrow-left" size={26} color="#32393d" />
               </TouchableOpacity>
 
-              {/* Title */}
               <Text style={{ fontSize: 34, fontWeight: "700", color: "#32393d" }}>
                 {workoutName}
               </Text>
             </View>
 
             <TouchableOpacity className="p-2" activeOpacity={0.8}>
-              <FontAwesome5 name="paw" size={22} color="#B9B9B9" />
+              <Image
+                source={require("../../assets/images/cat_paw.png")}
+                style={{
+                  width: 22,
+                  height: 22,
+                  tintColor: "#B9B9B9",
+                }}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
           </View>
 
-          {/* If you want editable title */}
+          {/* (Hidden input kept from your version) */}
           <View className="mt-3">
             <TextInput
               value={workoutName}
@@ -282,19 +330,15 @@ export default function CreateWorkout() {
               placeholder="Workout name"
               placeholderTextColor="#9A9A9A"
               className="text-[#32393d]"
-              style={{
-                fontSize: 14,
-                opacity: 0.0, // <-- set to 1 if you actually want the input visible
-                height: 0,
-              }}
+              style={{ fontSize: 14, opacity: 0.0, height: 0 }}
             />
           </View>
 
           {/* Stats row */}
           <View className="mt-10 flex-row items-center justify-between">
             <View className="flex-1 items-center">
-              <Text style={{ fontSize: 18, color: "#32393d" }}>Duration</Text>
-              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: "#32393d" }}>Duration</Text>
+              <Text style={{ fontSize: 16, color: "#32393d", marginTop: 8 }}>
                 {formatHMS(durationSeconds)}
               </Text>
             </View>
@@ -302,8 +346,8 @@ export default function CreateWorkout() {
             <View className="h-12 w-[1px] bg-[#B9B9B9] opacity-80" />
 
             <View className="flex-1 items-center">
-              <Text style={{ fontSize: 18, color: "#32393d" }}>lbs</Text>
-              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: "#32393d" }}>lbs</Text>
+              <Text style={{ fontSize: 16, color: "#32393d", marginTop: 8 }}>
                 {totalLbs}
               </Text>
             </View>
@@ -311,8 +355,8 @@ export default function CreateWorkout() {
             <View className="h-12 w-[1px] bg-[#B9B9B9] opacity-80" />
 
             <View className="flex-1 items-center">
-              <Text style={{ fontSize: 18, color: "#32393d" }}>Sets</Text>
-              <Text style={{ fontSize: 24, color: "#32393d", marginTop: 8 }}>
+              <Text style={{ fontSize: 12, color: "#32393d" }}>Sets</Text>
+              <Text style={{ fontSize: 16, color: "#32393d", marginTop: 8 }}>
                 {totalSets}
               </Text>
             </View>
@@ -324,14 +368,12 @@ export default function CreateWorkout() {
               onPress={handleSaveWorkout}
               disabled={saving}
               activeOpacity={0.85}
-              className="flex-1 mr-4 rounded-full py-4 items-center"
-              style={{
-                backgroundColor: finishButtonIsDark ? "#2E3742" : "#E8E1CF",
-              }}
+              className="flex-1 mr-4 rounded-full py-3 items-center"
+              style={{ backgroundColor: finishButtonIsDark ? "#2E3742" : "#E8E1CF" }}
             >
               <Text
                 style={{
-                  fontSize: 18,
+                  fontSize: 12,
                   fontWeight: "700",
                   color: finishButtonIsDark ? "#F6D88A" : "#32393d",
                 }}
@@ -343,10 +385,10 @@ export default function CreateWorkout() {
             <TouchableOpacity
               onPress={handleAddExercises}
               activeOpacity={0.85}
-              className="flex-1 rounded-full py-4 items-center"
-              style={{ backgroundColor: "#F6D88A" }}
+              className="flex-1 rounded-full py-3 items-center"
+              style={{ backgroundColor: "#FCDE8C" }}
             >
-              <Text style={{ fontSize: 18, fontWeight: "700", color: "#32393d" }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", color: "#32393d" }}>
                 Add Exercise
               </Text>
             </TouchableOpacity>
@@ -362,7 +404,7 @@ export default function CreateWorkout() {
                   <View key={block.exercise.exercise_lib_id} className="pb-4">
                     {/* Exercise header row */}
                     <View className="flex-row items-center justify-between">
-                      <Text style={{ fontSize: 26, fontWeight: "400", color: "#32393d" }}>
+                      <Text style={{ fontSize: 16, fontWeight: "400", color: "#32393d" }}>
                         {block.exercise.name}
                       </Text>
 
@@ -375,81 +417,124 @@ export default function CreateWorkout() {
                       </TouchableOpacity>
                     </View>
 
-                    {/* Table header */}
-                    <View className="mt-4 flex-row items-center">
-                      <Text style={{ width: 70, fontSize: 20, color: "#6A6A6A" }}>
-                        Sets
-                      </Text>
-                      <Text style={{ width: 90, fontSize: 20, color: "#6A6A6A" }}>
-                        Reps
-                      </Text>
-                      <Text style={{ width: 90, fontSize: 20, color: "#6A6A6A" }}>
-                        lbs
-                      </Text>
-                      <View style={{ flex: 1 }} />
-                      <View style={{ width: 30 }} />
+                    {/* Table header — 5 evenly spaced columns, no extra left/right padding */}
+                    <View style={{ ...fiveColRowStyle, marginTop: 14 }}>
+                      <View style={fiveColCellStyle}>
+                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                          Sets
+                        </Text>
+                      </View>
+                      <View style={fiveColCellStyle}>
+                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                          Reps
+                        </Text>
+                      </View>
+                      <View style={fiveColCellStyle}>
+                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                          lbs
+                        </Text>
+                      </View>
+                      <View style={fiveColCellStyle} />
+                      <View style={fiveColCellStyle} />
                     </View>
 
-                    {/* Rows (can be empty at first) */}
+                    {/* Rows */}
                     {block.sets.map((row) => (
                       <View
                         key={`${block.exercise.exercise_lib_id}-${row.setNumber}`}
-                        className="mt-4 flex-row items-center"
+                        style={{ ...fiveColRowStyle, marginTop: 18 }}
                       >
-                        <Text style={{ width: 70, fontSize: 20, color: "#4D4D4D" }}>
-                          {row.setNumber}
-                        </Text>
+                        {/* 1: Sets */}
+                        <View style={fiveColCellStyle}>
+                          <Text style={{ fontSize: 14, color: "#4D4D4D", textAlign: "center" }}>
+                            {row.setNumber}
+                          </Text>
+                        </View>
 
-                        <TextInput
-                          value={String(row.reps)}
-                          onChangeText={(v) =>
-                            updateSetValue(block.exercise.exercise_lib_id, row.setNumber, "reps", v)
-                          }
-                          keyboardType="number-pad"
-                          className="text-[#4D4D4D]"
-                          style={{ width: 90, fontSize: 20 }}
-                        />
+                        {/* 2: Reps */}
+                        <View style={fiveColCellStyle}>
+                          <TextInput
+                            value={String(row.reps)}
+                            onChangeText={(v) =>
+                              updateSetValue(
+                                block.exercise.exercise_lib_id,
+                                row.setNumber,
+                                "reps",
+                                v,
+                              )
+                            }
+                            keyboardType="number-pad"
+                            style={{
+                              width: "100%",
+                              fontSize: 14,
+                              color: "#4D4D4D",
+                              textAlign: "center",
+                              paddingVertical: 0,
+                            }}
+                          />
+                        </View>
 
-                        <TextInput
-                          value={String(row.lbs)}
-                          onChangeText={(v) =>
-                            updateSetValue(block.exercise.exercise_lib_id, row.setNumber, "lbs", v)
-                          }
-                          keyboardType="number-pad"
-                          className="text-[#4D4D4D]"
-                          style={{ width: 90, fontSize: 20 }}
-                        />
+                        {/* 3: lbs */}
+                        <View style={fiveColCellStyle}>
+                          <TextInput
+                            value={String(row.lbs)}
+                            onChangeText={(v) =>
+                              updateSetValue(
+                                block.exercise.exercise_lib_id,
+                                row.setNumber,
+                                "lbs",
+                                v,
+                              )
+                            }
+                            keyboardType="number-pad"
+                            style={{
+                              width: "100%",
+                              fontSize: 14,
+                              color: "#4D4D4D",
+                              textAlign: "center",
+                              paddingVertical: 0,
+                            }}
+                          />
+                        </View>
 
-                        <View style={{ flex: 1, alignItems: "center" }}>
+                        {/* 4: checkbox */}
+                        <View style={fiveColCellStyle}>
                           <TouchableOpacity
-                            onPress={() => toggleDone(block.exercise.exercise_lib_id, row.setNumber)}
+                            onPress={() =>
+                              toggleDone(block.exercise.exercise_lib_id, row.setNumber)
+                            }
                             activeOpacity={0.8}
                             style={{
-                              width: 32,
-                              height: 32,
+                              width: 28,
+                              height: 28,
                               borderRadius: 7,
-                              borderWidth: 2,
+                              borderWidth: 1.5,
                               borderColor: "#3A3A3A",
-                              backgroundColor: row.done ? "#F6D88A" : "transparent",
+                              backgroundColor: row.done ? "#FCDE8C" : "transparent",
                               alignItems: "center",
                               justifyContent: "center",
                             }}
                           >
-                            {row.done ? <Feather name="check" size={18} color="#2E3742" /> : null}
+                            {row.done ? (
+                              <Feather name="check" size={16} color="#2E3742" />
+                            ) : null}
                           </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity
-                          onPress={() => removeSetRow(block.exercise.exercise_lib_id, row.setNumber)}
-                          activeOpacity={0.6}
-                          style={{ width: 30, alignItems: "center" }}
-                        >
-                          <Feather name="minus" size={26} color="#6A6A6A" />
-                        </TouchableOpacity>
+                        {/* 5: minus */}
+                        <View style={fiveColCellStyle}>
+                          <TouchableOpacity
+                            onPress={() =>
+                              removeSetRow(block.exercise.exercise_lib_id, row.setNumber)
+                            }
+                            activeOpacity={0.6}
+                          >
+                            <Feather name="minus" size={26} color="#6A6A6A" />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     ))}
 
-                    {/* Divider */}
                     {!isLast && <View className="mt-6 h-[1px] bg-[#D2D2D2]" />}
                   </View>
                 );
@@ -459,7 +544,6 @@ export default function CreateWorkout() {
         </View>
       </ScrollView>
 
-      {/* Exercise List Modal (this is the popup when Add Exercise is pressed) */}
       <ExerciseList
         visible={showExerciseList}
         onClose={() => setShowExerciseList(false)}
@@ -468,7 +552,6 @@ export default function CreateWorkout() {
         selectedExercises={selectedExercises}
       />
 
-      {/* Popup Message */}
       <PopupMessage
         visible={showPopup}
         title={popupConfig.title}
@@ -476,6 +559,6 @@ export default function CreateWorkout() {
         type={popupConfig.type}
         onClose={popupConfig.onClose}
       />
-    </LinearGradient>
+    </View>
   );
 }

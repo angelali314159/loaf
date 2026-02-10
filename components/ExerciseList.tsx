@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../utils/supabase";
+import { router } from "expo-router";
+
 
 interface Exercise {
   exercise_lib_id: number;
@@ -179,9 +181,16 @@ export default function ExerciseList({
                       key={ex.exercise_lib_id}
                       activeOpacity={0.75}
                       onPress={() => toggleExercise(ex)}
+                      onLongPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/exercisePreview",
+                          params: { exerciseName: ex.name },
+                        })
+                      }
+                      delayLongPress={250}
                       className="py-3"
                     >
-                      {/* This is the highlighted “pill” area */}
+                      {/* This is the highlighted "pill" area */}
                       <View
                         className={`flex-row items-center rounded-2xl px-4 py-4 ${
                           isSelected ? "bg-[#F7D57A]" : "bg-transparent"
@@ -218,10 +227,10 @@ export default function ExerciseList({
             <View className="px-6 py-5">
               <View className="flex-row">
                 <TouchableOpacity
-                  className="flex-1 rounded-full py-4 items-center justify-center bg-[#EFE6C8]"
+                  className="flex-1 rounded-full py-2 items-center justify-center bg-[#EFE6C8]"
                   onPress={onRestoreWorkout ?? (() => console.log("restore"))}
                 >
-                  <Text className="text-[#0B1626] font-semibold text-lg">
+                  <Text className="text-[#0B1626] font-semibold text-lg" style = {{fontSize: 12,}}>
                     Restore Workout
                   </Text>
                 </TouchableOpacity>
@@ -229,10 +238,10 @@ export default function ExerciseList({
                 <View className="w-4" />
 
                 <TouchableOpacity
-                  className="flex-1 rounded-full py-4 items-center justify-center bg-[#F7D57A]"
+                  className="flex-1 rounded-full py-2 items-center justify-center bg-[#F7D57A]"
                   onPress={onSaveEdits ?? (() => console.log("save"))}
                 >
-                  <Text className="text-[#0B1626] font-semibold text-lg">
+                  <Text className="text-[#0B1626] font-semibold text-lg " style = {{fontSize: 12,}}>
                     Save Edits
                   </Text>
                 </TouchableOpacity>

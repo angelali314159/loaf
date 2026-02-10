@@ -157,7 +157,7 @@ export default function WorkoutList() {
 
           <TouchableOpacity
             className="p-2"
-            onPress={() => router.push("/(tabs)/createWorkout")}
+            onPress={() => router.push("/(tabs)/inWorkout")}
           >
             <Feather name="plus" size={height * 0.035} color="#32393d" />
           </TouchableOpacity>

@@ -1,10 +1,10 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { Dimensions, ScrollView, TouchableOpacity, View } from "react-native";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import WorkoutPreview from "../../components/WorkoutPreview";
-import { H1, H2, P } from "../../components/typography";
+import { Button, H3, P } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -32,7 +32,7 @@ export default function WorkoutList() {
     try {
       setLoading(true);
 
-      // Fetch workouts for the user
+      // Fetch workouts from Supabase for the user
       const { data: workouts, error: workoutsError } = await supabase
         .from("workouts")
         .select("workout_id, workout_name, created_at")
@@ -44,9 +44,6 @@ export default function WorkoutList() {
         throw workoutsError;
       }
 
-      console.log("Fetched workouts:", JSON.stringify(workouts, null, 2));
-
-      // Fetch workout details using RPC function for each workout
       const formattedWorkouts: WorkoutPlan[] = await Promise.all(
         (workouts || []).map(async (workout) => {
           const { data, error } = await supabase.rpc("get_workout_preview", {
@@ -65,11 +62,6 @@ export default function WorkoutList() {
             };
           }
 
-          console.log(
-            `Workout preview for ${workout.workout_id}:`,
-            JSON.stringify(data, null, 2),
-          );
-
           return {
             workout_id: data.workout_id,
             workout_name: data.workout_name,
@@ -81,14 +73,7 @@ export default function WorkoutList() {
           };
         }),
       );
-
-      console.log(
-        "Final formatted workouts:",
-        JSON.stringify(formattedWorkouts, null, 2),
-      );
       setWorkoutPlans(formattedWorkouts);
-    } catch (error) {
-      console.error("Error fetching workouts:", error);
     } finally {
       setLoading(false);
     }
@@ -129,125 +114,123 @@ export default function WorkoutList() {
     navigateToWorkout(workoutPlan);
   };
 
+  const height = Dimensions.get("screen").height;
+  const width = Dimensions.get("screen").width;
+
   return (
-    <View className="flex-1 bg-[#f2f0ef]">
-      <ScrollView className="flex-1 mx-4">
-        {/* Header */}
-        <View className="mt-10 mb-6">
-          <View className="flex-row justify-between items-center">
-            <H1 className="text-[#32393d] text-4xl">My Workouts</H1>
-            <View className="flex-row gap-3">
-              <TouchableOpacity
-                className="p-2"
-                onPress={() => router.push("/(tabs)/createWorkout")}
-              >
-                <Feather name="plus" size={27} color="#32393d" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="p-2"
-                //onPress={() => router.push('/(tabs)/generateWorkout')}
-              >
-                <Ionicons name="sparkles" size={23} color="#32393d" />
-              </TouchableOpacity>
-            </View>
-          </View>
-          <P className="text-[#32393d] text-lg mt-2">
-            {workoutPlans.length} workout{workoutPlans.length !== 1 ? "s" : ""}{" "}
-            saved
-          </P>
+    <View className="flex-1 bg-white">
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View
+        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
+      >
+        <Svg
+          height={Dimensions.get("screen").height * 0.5}
+          width={Dimensions.get("screen").width}
+        >
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%" //centered horizontally
+              cy="0%" //top edge
+              rx="150%" //horiztonal radius
+              ry="70%" //vertical radius
+              gradientUnits="objectBoundingBox"
+            >
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
+      </View>
+
+      {/* Static Header Section */}
+      <View className="mx-8">
+        {/* Dice and Plus buttons*/}
+        <View className="flex-row justify-end mt-20">
+          <TouchableOpacity
+            className="p-2 mr-2"
+            onPress={() => router.push("/(tabs)/generateWorkout")}
+          >
+            <Feather name="shuffle" size={height * 0.035} color="#32393d" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="p-2"
+            onPress={() => router.push("/(tabs)/createWorkout")}
+          >
+            <Feather name="plus" size={height * 0.035} color="#32393d" />
+          </TouchableOpacity>
         </View>
 
-        {/* Workout List */}
+        <H3 className="mb-2" baseSize={14}>
+          My Workouts
+        </H3>
+        <Button
+          title="Start Empty Workout"
+          onPress={startEmptyWorkout}
+          fontSize={12}
+          height={20}
+          style={{ marginBottom: 20 }}
+        />
+      </View>
+
+      {/* Scrollable Workout List */}
+      <ScrollView
+        className="flex-1 mx-8"
+        contentContainerStyle={{ paddingBottom: height * 0.1 }}
+      >
         <View className="mb-8">
           {loading ? (
             <View className="items-center justify-center py-8">
-              <P className="text-[#32393d]">Loading workouts...</P>
+              <P className="text-black">Loading workouts...</P>
             </View>
           ) : (
             <>
-              {/* Start Empty Workout Card */}
-              <TouchableOpacity className="mb-4" onPress={startEmptyWorkout}>
-                <LinearGradient
-                  colors={["#FCDE8C", "#fef3d4"]}
-                  locations={[0, 0.8]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  className="rounded-lg p-4"
-                >
-                  <View className="flex-row items-center justify-center py-2">
-                    <Feather name="plus-circle" size={24} color="#32393d" />
-                    <H2 className="text-[#32393d] text-xl ml-3">
-                      Start Empty Workout
-                    </H2>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-
               {/* Existing Workouts */}
               {workoutPlans.length === 0 ? (
-                <LinearGradient
-                  colors={["#FFD3D3", "#ffeded"]}
-                  locations={[0, 0.8]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  className="rounded-lg p-8 items-center justify-center"
+                <P
+                  className="text-[#32393d] text-center text-lg "
+                  style={{ marginTop: height * 0.2 }}
                 >
-                  <P className="text-[#32393d] text-center text-lg">
-                    No saved workouts yet.{"\n"}Create your first workout plan!
-                  </P>
-                </LinearGradient>
+                  No saved workouts yet.{"\n"}Create your first workout plan by
+                  pressing the + button.
+                </P>
               ) : (
-                workoutPlans.map((item, index) => (
-                  <View key={item.workout_id} className="mb-4">
-                    <TouchableOpacity
-                      onPress={() => handlePreviewWorkout(item)}
-                    >
-                      <LinearGradient
-                        colors={
-                          index % 3 === 0
-                            ? ["#FFD3D3", "#ffeded"]
-                            : index % 3 === 1
-                              ? ["#E1D8FC", "#f0ebff"]
-                              : ["#DDF8FE", "#ebf9fd"]
-                        }
-                        locations={[0, 0.8]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        className="rounded-lg p-4"
-                      >
-                        <View className="flex-row justify-between items-center">
-                          <View className="flex-1">
-                            <H2 className="text-[#32393d] text-xl mb-3">
-                              {item.workout_name}
-                            </H2>
-                            <View className="flex-row flex-wrap">
-                              {item.exercises.map((exercise) => (
-                                <View
-                                  key={exercise.exercise_lib_id}
-                                  className="bg-white/80 rounded-lg px-3 py-1 mr-2 mb-2 border border-[#32393d]"
-                                >
-                                  <P className="text-[#32393d] text-sm font-semibold">
-                                    {exercise.name}
-                                  </P>
-                                </View>
-                              ))}
-                            </View>
-                            <P className="text-[#32393d] text-sm mt-2 opacity-70">
-                              {item.exercises.length} exercise
-                              {item.exercises.length !== 1 ? "s" : ""}
-                            </P>
-                          </View>
-                        </View>
-                        {/* Start Button */}
-                        <TouchableOpacity
-                          className="mt-3 rounded-lg py-3 items-center"
-                          onPress={() => navigateToWorkout(item)}
+                workoutPlans.map((item) => (
+                  <TouchableOpacity
+                    key={item.workout_id}
+                    onPress={() => handlePreviewWorkout(item)}
+                    className="mt-2 mb-2 pb-4 border-b border-[#32393d]/20"
+                  >
+                    <View className="flex-row justify-between items-start">
+                      <View className="flex-1 mr-4">
+                        <P
+                          className="text-[#32393d]"
+                          style={{ fontWeight: "600" }}
                         >
-                          <P className="text-white font-bold">Start Workout</P>
-                        </TouchableOpacity>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
+                          {item.workout_name}
+                        </P>
+                        <P className="text-[#565656]">
+                          {item.exercises
+                            .slice(0, 2)
+                            .map((ex) => ex.name)
+                            .join(", ")}
+                          {item.exercises.length > 2 &&
+                            `, +${item.exercises.length - 2} more`}
+                        </P>
+                      </View>
+                      <Button
+                        title="Start"
+                        width="18%"
+                        fontSize={12}
+                        height={8}
+                        onPress={() => {
+                          navigateToWorkout(item);
+                        }}
+                      />
+                    </View>
+                  </TouchableOpacity>
                 ))
               )}
             </>

@@ -330,12 +330,6 @@ export default function InWorkout() {
             <P className="text-[#32393d] text-center mb-4">
               No exercises yet.{"\n"}Add your first exercise!
             </P>
-            <Button
-              title="Add Exercise"
-              onPress={handleAddExercise}
-              color="yellow"
-              fontColor="blue"
-            />
           </View>
         ) : (
           exercises.map((exercise, exIdx) => (

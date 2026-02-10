@@ -1,20 +1,22 @@
+import { Feather } from "@expo/vector-icons";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
-} from "react-native";
-import { Button } from "../../components/typography";
+import { Dimensions, TextInput, TouchableOpacity, View } from "react-native";
+import Svg, {
+  Defs,
+  RadialGradient,
+  Stop,
+  Rect as SvgRect,
+} from "react-native-svg";
+import { Button, H1, P } from "../../components/typography";
 
 interface WorkoutStat {
   label: string;
   value: string;
   visible: boolean;
+  icon: string;
 }
 
 interface WorkoutData {
@@ -24,6 +26,7 @@ interface WorkoutData {
   sets: number;
   totalReps: number;
   weightLifted: number;
+  prs?: number;
 }
 
 export default function PostWorkout() {
@@ -33,6 +36,11 @@ export default function PostWorkout() {
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [stats, setStats] = useState<WorkoutStat[]>([]);
+  const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
+  const [isPicturesOpen, setIsPicturesOpen] = useState(true);
+  const [isStatsOpen, setIsStatsOpen] = useState(true);
+
+  const MAX_CHARACTERS = 1000;
 
   useEffect(() => {
     if (workoutDataParam) {
@@ -47,22 +55,29 @@ export default function PostWorkout() {
 
         // Set stats from workout data
         setStats([
-          { label: "Duration", value: durationStr, visible: true },
+          {
+            label: "Duration",
+            value: durationStr,
+            visible: true,
+            icon: "clock",
+          },
           {
             label: "Exercises",
-            value: data.exercises.toString(),
+            value: `${data.exercises} exercises`,
             visible: true,
-          },
-          { label: "Sets", value: data.sets.toString(), visible: true },
-          {
-            label: "Total Reps",
-            value: data.totalReps.toString(),
-            visible: true,
+            icon: "dumbbell",
           },
           {
             label: "Weight Lifted",
             value: `${data.weightLifted.toLocaleString()} lbs`,
             visible: true,
+            icon: "weight-hanging",
+          },
+          {
+            label: "PRs",
+            value: `${data.prs || 0} PRs`,
+            visible: true,
+            icon: "award",
           },
         ]);
 
@@ -72,21 +87,39 @@ export default function PostWorkout() {
         console.error("Error parsing workout data:", error);
         // Fallback to default stats
         setStats([
-          { label: "Duration", value: "45 min", visible: true },
-          { label: "Exercises", value: "8", visible: true },
-          { label: "Sets", value: "24", visible: true },
-          { label: "Total Reps", value: "180", visible: true },
-          { label: "Weight Lifted", value: "2,500 lbs", visible: true },
+          { label: "Duration", value: "45 min", visible: true, icon: "clock" },
+          {
+            label: "Exercises",
+            value: "8 exercises",
+            visible: true,
+            icon: "dumbbell",
+          },
+          {
+            label: "Weight Lifted",
+            value: "2,500 lbs",
+            visible: true,
+            icon: "weight-hanging",
+          },
+          { label: "PRs", value: "3 PRs", visible: true, icon: "award" },
         ]);
       }
     } else {
       // Default stats if no data passed
       setStats([
-        { label: "Duration", value: "45 min", visible: true },
-        { label: "Exercises", value: "8", visible: true },
-        { label: "Sets", value: "24", visible: true },
-        { label: "Total Reps", value: "180", visible: true },
-        { label: "Weight Lifted", value: "2,500 lbs", visible: true },
+        { label: "Duration", value: "45 min", visible: true, icon: "clock" },
+        {
+          label: "Exercises",
+          value: "8 exercises",
+          visible: true,
+          icon: "dumbbell",
+        },
+        {
+          label: "Weight Lifted",
+          value: "2,500 lbs",
+          visible: true,
+          icon: "weight-hanging",
+        },
+        { label: "PRs", value: "3 PRs", visible: true, icon: "award" },
       ]);
     }
   }, [workoutDataParam]);
@@ -140,183 +173,268 @@ export default function PostWorkout() {
     router.push("/(tabs)/landingMain");
   };
 
+  const height = Dimensions.get("screen").height;
+  const width = Dimensions.get("screen").width;
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <h1 style={styles.title}>Share Your Workout</h1>
+    <View className="flex-1 bg-white">
+      {/* SEMICIRCLE GRADIENT BACKGROUND */}
+      <View
+        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
+      >
+        <Svg
+          height={Dimensions.get("screen").height * 0.5}
+          width={Dimensions.get("screen").width}
+        >
+          <Defs>
+            <RadialGradient
+              id="topSemiCircle"
+              cx="50%" //centered horizontally
+              cy="0%" //top edge
+              rx="150%" //horiztonal radius
+              ry="70%" //vertical radius
+              gradientUnits="objectBoundingBox"
+            >
+              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
+            </RadialGradient>
+          </Defs>
+          <SvgRect width="100%" height="100%" fill="url(#topSemiCircle)" />
+        </Svg>
+      </View>
 
-        {/* Description Input */}
-        <View style={styles.section}>
-          <h3 style={styles.sectionTitle}>Description</h3>
-          <TextInput
-            style={styles.textInput}
-            placeholder="How did your workout go?"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-        </View>
-
-        {/* Photo Selection */}
-        <View style={styles.section}>
-          <h3 style={styles.sectionTitle}>Photo</h3>
-          {imageUri ? (
-            <View style={styles.imageContainer}>
-              <Image source={{ uri: imageUri }} style={styles.image} />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => setImageUri(null)}
-              >
-                <span style={styles.removeButtonText}>✕</span>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.photoButtons}>
-              <Button title="Take Photo" onPress={takePhoto} />
-              <Button
-                title="Choose from Gallery"
-                onPress={pickImageFromGallery}
+      <View
+        className="flex-1 w-full items-start"
+        style={{ marginTop: height * 0.1, marginHorizontal: width * 0.08 }}
+      >
+        {/* Description Section */}
+        <View style={{ width: width * 0.84 }}>
+          <View className="flex-row justify-between items-center">
+            <H1 baseSize={13}>Description</H1>
+            <TouchableOpacity
+              onPress={() => setIsDescriptionOpen(!isDescriptionOpen)}
+              className="p-2"
+            >
+              <Feather
+                name={isDescriptionOpen ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#09090B"
               />
+            </TouchableOpacity>
+          </View>
+
+          {isDescriptionOpen && (
+            <View style={{ marginTop: 20 }}>
+              <TextInput
+                placeholder="How did your workout go?"
+                value={description}
+                onChangeText={(text) => {
+                  if (text.length <= MAX_CHARACTERS) {
+                    setDescription(text);
+                  }
+                }}
+                multiline
+                numberOfLines={3}
+                maxLength={MAX_CHARACTERS}
+                style={{
+                  width: "100%",
+                  borderWidth: 1,
+                  borderColor: "#B1B0B0",
+                  borderRadius: 8,
+                  padding: 12,
+                  textAlignVertical: "top",
+                  minHeight: height * 0.1,
+                }}
+              />
+              <P
+                className="text-right mt-1"
+                style={{
+                  color:
+                    description.length >= MAX_CHARACTERS ? "#ff0000" : "#666",
+                  fontSize: 12,
+                }}
+              >
+                {description.length}/{MAX_CHARACTERS}
+              </P>
             </View>
           )}
-        </View>
 
-        {/* Statistics */}
-        <View style={styles.section}>
-          <h3 style={styles.sectionTitle}>Workout Stats (tap to hide/show)</h3>
-          <View style={styles.statsGrid}>
-            {stats.map((stat, index) => (
+          {/* Divider */}
+          <View
+            style={{
+              width: width * 0.84,
+              height: 1,
+              backgroundColor: "#DADADA",
+              marginTop: 20,
+            }}
+          />
+
+          {/* Pictures Section */}
+          <View style={{ width: width * 0.84, marginTop: 20 }}>
+            <View className="flex-row justify-between items-center">
+              <H1 baseSize={13}>Pictures</H1>
               <TouchableOpacity
-                key={index}
-                style={[styles.statBox, !stat.visible && styles.statBoxHidden]}
-                onPress={() => toggleStatVisibility(index)}
+                onPress={() => setIsPicturesOpen(!isPicturesOpen)}
+                className="p-2"
               >
-                {!stat.visible && (
-                  <View style={styles.xOverlay}>
-                    <span style={styles.xText}>✕</span>
+                <Feather
+                  name={isPicturesOpen ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#09090B"
+                />
+              </TouchableOpacity>
+            </View>
+
+            {isPicturesOpen && (
+              <View style={{ marginTop: 20 }}>
+                <View className="flex-row gap-4">
+                  <TouchableOpacity
+                    onPress={takePhoto}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: "#B1B0B0",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Feather name="camera" size={24} color="#09090B" />
+                    <P className="mt-2">Take Photo</P>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={pickImageFromGallery}
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: "#B1B0B0",
+                      borderRadius: 8,
+                      padding: 16,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Feather name="image" size={24} color="#09090B" />
+                    <P className="mt-2">Photo Gallery</P>
+                  </TouchableOpacity>
+                </View>
+                {imageUri && (
+                  <View style={{ marginTop: 12, position: "relative" }}>
+                    <img
+                      source={{ uri: imageUri }}
+                      style={{
+                        width: "100%",
+                        height: 200,
+                        borderRadius: 8,
+                      }}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setImageUri(null)}
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        borderRadius: 20,
+                        padding: 8,
+                      }}
+                    >
+                      <Feather name="x" size={20} color="#fff" />
+                    </TouchableOpacity>
                   </View>
                 )}
-                <p style={styles.statLabel}>{stat.label}</p>
-                <p style={styles.statValue}>{stat.value}</p>
+              </View>
+            )}
+          </View>
+
+          {/* Divider */}
+          <View
+            style={{
+              width: width * 0.84,
+              height: 1,
+              backgroundColor: "#DADADA",
+              marginTop: 20,
+            }}
+          />
+
+          {/* Statistics Section */}
+          <View style={{ width: width * 0.84, marginTop: 20 }}>
+            <View className="flex-row justify-between items-center">
+              <H1 baseSize={13}>Statistics display</H1>
+              <TouchableOpacity
+                onPress={() => setIsStatsOpen(!isStatsOpen)}
+                className="p-2"
+              >
+                <Feather
+                  name={isStatsOpen ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#09090B"
+                />
               </TouchableOpacity>
-            ))}
+            </View>
+
+            {isStatsOpen && (
+              <View
+                style={{
+                  marginTop: 20,
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 12,
+                }}
+              >
+                {stats.map((stat, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => toggleStatVisibility(index)}
+                    style={{
+                      backgroundColor: stat.visible ? "#FCDE8C" : "#E5E5E5",
+                      paddingHorizontal: 10,
+                      paddingVertical: 7,
+                      borderRadius: 20,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <FontAwesome5 name={stat.icon} size={12} color="#2D3541" />
+                    <P style={{ fontSize: 14, color: "#2D3541" }}>
+                      {stat.value}
+                    </P>
+                    <Feather
+                      name={stat.visible ? "x" : "plus"}
+                      size={12}
+                      color="#2D3541"
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Submit Button */}
-        <View style={styles.submitSection}>
-          <Button title="Post Workout" onPress={handlePost} />
-          <Button title="Cancel" onPress={() => router.back()} />
+        {/* Buttons Section */}
+        <View
+          style={{
+            width: width * 0.84,
+            marginTop: 40,
+          }}
+        >
+          <Button
+            title="Post Workout"
+            onPress={handlePost}
+            color="yellow"
+            fontColor="blue"
+            width="100%"
+          />
+          <Button
+            title="Home"
+            onPress={() => router.push("/(tabs)/landingMain")}
+            color="blue"
+            fontColor="white"
+            width="100%"
+          />
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  photoButtons: {
-    gap: 10,
-  },
-  imageContainer: {
-    position: "relative",
-    width: "100%",
-    aspectRatio: 4 / 3,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  removeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  removeButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  statBox: {
-    width: "48%",
-    backgroundColor: "#f0f0f0",
-    padding: 15,
-    borderRadius: 8,
-    position: "relative",
-  },
-  statBoxHidden: {
-    opacity: 0.4,
-  },
-  xOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1,
-  },
-  xText: {
-    fontSize: 40,
-    color: "#ff0000",
-    fontWeight: "bold",
-  },
-  statLabel: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 5,
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  submitSection: {
-    gap: 10,
-    marginTop: 20,
-    marginBottom: 40,
-  },
-});

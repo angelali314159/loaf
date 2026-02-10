@@ -14,6 +14,7 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
+import { ExerciseLibraryProvider } from "../../contexts/ExerciseLibraryContext";
 import { supabase } from "../../utils/supabase";
 
 interface Exercise {
@@ -60,7 +61,8 @@ const fiveColCellStyle = {
   alignItems: "center" as const,
 };
 
-export default function CreateWorkout() {
+// Internal component
+function CreateWorkoutContent() {
   const { user } = useAuth();
 
   const [workoutName, setWorkoutName] = useState("11/1/25 Workout");
@@ -619,5 +621,14 @@ export default function CreateWorkout() {
         onClose={popupConfig.onClose}
       />
     </View>
+  );
+}
+
+// Wrapper with provider
+export default function CreateWorkout() {
+  return (
+    <ExerciseLibraryProvider>
+      <CreateWorkoutContent />
+    </ExerciseLibraryProvider>
   );
 }

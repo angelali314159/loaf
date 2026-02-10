@@ -12,6 +12,8 @@ export interface ExerciseLibraryItem {
     name: string;
     is_primary: boolean;
   }[];
+  image_name?: string | null;
+  image_url?: string | null; // Add this field for remote URLs
 }
 
 interface ExerciseLibraryContextType {
@@ -55,7 +57,8 @@ export function ExerciseLibraryProvider({
               muscle_id,
               name
             )
-          )
+          ),
+          image_name
         `);
 
       if (exerciseError) throw exerciseError;
@@ -73,6 +76,7 @@ export function ExerciseLibraryProvider({
             name: em.muscles.name,
             is_primary: em.is_primary,
           })),
+          image_name: exercise.image_name,
         }),
       );
 

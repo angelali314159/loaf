@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import Octicons from "@expo/vector-icons/Octicons";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
@@ -10,9 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { ExerciseLibraryProvider } from "../contexts/ExerciseLibraryContext";
 import { supabase } from "../utils/supabase";
-import { router } from "expo-router";
-
 
 interface Exercise {
   exercise_lib_id: number;
@@ -32,7 +32,8 @@ interface ExerciseListProps {
   onSaveEdits?: () => void;
 }
 
-export default function ExerciseList({
+// Internal component that uses the context
+function ExerciseListContent({
   visible,
   onClose,
   onSelectExercise,
@@ -230,7 +231,10 @@ export default function ExerciseList({
                   className="flex-1 rounded-full py-2 items-center justify-center bg-[#EFE6C8]"
                   onPress={onRestoreWorkout ?? (() => console.log("restore"))}
                 >
-                  <Text className="text-[#0B1626] font-semibold text-lg" style = {{fontSize: 12,}}>
+                  <Text
+                    className="text-[#0B1626] font-semibold text-lg"
+                    style={{ fontSize: 12 }}
+                  >
                     Restore Workout
                   </Text>
                 </TouchableOpacity>
@@ -241,7 +245,10 @@ export default function ExerciseList({
                   className="flex-1 rounded-full py-2 items-center justify-center bg-[#F7D57A]"
                   onPress={onSaveEdits ?? (() => console.log("save"))}
                 >
-                  <Text className="text-[#0B1626] font-semibold text-lg " style = {{fontSize: 12,}}>
+                  <Text
+                    className="text-[#0B1626] font-semibold text-lg "
+                    style={{ fontSize: 12 }}
+                  >
                     Save Edits
                   </Text>
                 </TouchableOpacity>
@@ -251,6 +258,19 @@ export default function ExerciseList({
         </View>
       </View>
     </Modal>
+  );
+}
+
+// Wrapper that provides context only when modal is visible
+export default function ExerciseList(props: ExerciseListProps) {
+  if (!props.visible) {
+    return null;
+  }
+
+  return (
+    <ExerciseLibraryProvider>
+      <ExerciseListContent {...props} />
+    </ExerciseLibraryProvider>
   );
 }
 

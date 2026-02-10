@@ -37,6 +37,7 @@ interface WorkoutData {
   totalReps: number;
   weightLifted: number;
   prs?: number;
+  workoutHistoryId?: string;
 }
 
 export default function PostWorkout() {
@@ -54,11 +55,7 @@ export default function PostWorkout() {
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
 
   const MAX_CHARACTERS = 1000;
-  const MAX_FILE_SIZE = 500 * 1024; // 500 KB
-
-  // Helper for random filename
-  const randomFilename = (ext: string) =>
-    `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+  const MAX_FILE_SIZE = 50 * 1024; // 50 KB - set in Supabase, can change later
 
   useEffect(() => {
     if (workoutDataParam) {
@@ -100,41 +97,61 @@ export default function PostWorkout() {
           },
         ]);
 
-        // Set default description
-        setDescription(`Completed ${data.workoutName}! 💪`);
+        setDescription(``);
       } catch (error) {
         console.error("Error parsing workout data:", error);
       }
     }
   }, [workoutDataParam]);
 
+  const uriToBlob = async (uri: string): Promise<Blob> => {
+    const response = await fetch(uri);
+    if (!response.ok)
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    const blob = await response.blob();
+    return blob;
+  };
+
   const compressImage = async (uri: string): Promise<string | null> => {
     try {
-      // First, resize to reasonable dimensions
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1024 } }], // Resize width to 1024px, height auto
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
-      );
+      let quality = 0.8;
+      let width = 1024;
 
-      // Check file size
-      const response = await fetch(manipResult.uri);
-      const blob = await response.blob();
+      // Iteratively compress until under 50 KB
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width } }],
+          { compress: quality, format: ImageManipulator.SaveFormat.JPEG },
+        );
 
-      if (blob.size <= MAX_FILE_SIZE) {
-        return manipResult.uri;
+        const blob = await uriToBlob(manipResult.uri);
+        const fileSize = blob.size;
+
+        if (fileSize <= MAX_FILE_SIZE) {
+          return manipResult.uri;
+        }
+
+        // Reduce quality and size more aggressively
+        quality = Math.max(0.1, quality - 0.15);
+        width = Math.max(400, Math.floor(width * 0.7));
       }
 
-      // If still too large, compress more aggressively
-      const secondPass = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG },
+      // If still too large after 5 attempts, warn user
+      console.log(
+        "compressImage - Failed to compress under 50 KB after 5 attempts",
       );
-
-      return secondPass.uri;
+      Alert.alert(
+        "Image too large",
+        "Unable to compress image below 50 KB. Please try a different image or take a new photo.",
+      );
+      return null;
     } catch (error) {
       console.error("Error compressing image:", error);
+      Alert.alert(
+        "Compression failed",
+        "Failed to process image. Please try again.",
+      );
       return null;
     }
   };
@@ -186,34 +203,47 @@ export default function PostWorkout() {
     if (!user?.id) return null;
 
     try {
-      // Get file extension
-      const uriParts = uri.split(".");
-      const ext = uriParts[uriParts.length - 1] || "jpg";
-
-      // Build path matching RLS rule: userId/<filename>
-      const filename = randomFilename(ext);
-      const path = `1hys5dx_0/${filename}`; // TODO- change to userId
-
-      // Fetch the file into a blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      // Check file size
-      if (blob.size > MAX_FILE_SIZE) {
-        Alert.alert("File too large", "Image must be under 500 KB");
+      let blob: Blob;
+      try {
+        blob = await uriToBlob(uri);
+      } catch (err) {
+        console.error(
+          "uploadImageToSupabase - Could not convert file to blob:",
+          err,
+        );
+        Alert.alert("Error", `Could not convert file to blob: ${err}`);
         return null;
       }
 
-      // Set content-type
-      const contentType = blob.type || `image/${ext}`;
+      if (blob.size === 0) {
+        console.error("uploadImageToSupabase - Empty file detected");
+        Alert.alert("Error", "Image file is empty. Please try again.");
+        return null;
+      }
+
+      // Double-check file size (should already be under limit from compressImage)
+      if (blob.size > MAX_FILE_SIZE) {
+        console.error("uploadImageToSupabase - File too large:", blob.size);
+        Alert.alert(
+          "File too large",
+          `Image is ${Math.round(blob.size / 1024)} KB, must be under 50 KB`,
+        );
+        return null;
+      }
+
+      // Build path and content type
+      const filename = uri.split("/").pop() || `${Date.now()}.jpg`;
+      const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+      const contentType = ext === "png" ? "image/png" : "image/jpeg";
+      const path = `${user.id}/${Date.now()}-${filename}`;
 
       // Upload to Supabase storage
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from("post-images")
-        .upload(path, blob, { contentType });
+        .upload(path, blob, { contentType, upsert: false });
 
       if (uploadError) {
-        console.error("Upload error:", uploadError);
+        console.error("uploadImageToSupabase - Upload error:", uploadError);
         throw uploadError;
       }
 
@@ -224,7 +254,7 @@ export default function PostWorkout() {
 
       return publicUrl;
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("uploadImageToSupabase - Error uploading image:", error);
       Alert.alert("Upload failed", "Failed to upload image. Please try again.");
       return null;
     }
@@ -277,7 +307,9 @@ export default function PostWorkout() {
       // Insert workout post
       const { error: postError } = await supabase.from("workout_posts").insert({
         profile_id: user.id,
-        workout_history_id: parseInt(workoutData.workoutHistoryId),
+        workout_history_id: workoutData.workoutHistoryId
+          ? parseInt(workoutData.workoutHistoryId)
+          : null,
         description: description.trim() || null,
         image_url: imageUrl,
         visible_stats: visibleStats,

@@ -41,7 +41,7 @@ export default function Profile() {
   const [friendsCount, setFriendsCount] = useState(0);
   const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
   const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
@@ -52,6 +52,26 @@ export default function Profile() {
       fetchFriendPosts();
     }
   }, [user]);
+
+  useEffect(() => {
+    const loadImageUrls = async () => {
+      const urlMap = new Map<number, string>();
+
+      for (const post of friendPosts) {
+        if (post.image_url) {
+          const signedUrl = await getSignedImageUrl(post.image_url);
+          if (signedUrl) {
+            urlMap.set(post.workout_post_id, signedUrl);
+          }
+        }
+      }
+      setImageUrls(urlMap);
+    };
+
+    if (friendPosts.length > 0) {
+      loadImageUrls();
+    }
+  }, [friendPosts]);
 
   const fetchProfileData = async () => {
     if (!user?.id) return;
@@ -356,12 +376,19 @@ export default function Profile() {
                 </View>
 
                 {/* Post Image */}
-                {post.image_url ? (
+                {imageUrls.get(post.workout_post_id) ? (
                   <Image
-                    source={{ uri: post.image_url }}
+                    source={{ uri: imageUrls.get(post.workout_post_id) }}
                     style={{ width: "100%", height: screenWidth - 48 }}
                     resizeMode="cover"
                   />
+                ) : post.image_url ? (
+                  <View
+                    style={{ width: "100%", height: screenWidth - 48 }}
+                    className="bg-[#f2f0ef] items-center justify-center"
+                  >
+                    <P className="text-[#565656]">Loading image...</P>
+                  </View>
                 ) : (
                   <View
                     style={{ width: "100%", height: screenWidth - 48 }}

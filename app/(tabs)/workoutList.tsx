@@ -90,6 +90,7 @@ export default function WorkoutList() {
         workoutId: workoutPlan.workout_id.toString(),
         workoutName: workoutPlan.workout_name,
         exercises: JSON.stringify(workoutPlan.exercises),
+        isSavedWorkout: "true",
       },
     });
   };
@@ -97,7 +98,10 @@ export default function WorkoutList() {
   const startEmptyWorkout = () => {
     router.push({
       pathname: "/(tabs)/inWorkout",
-      params: { workoutId: "new" },
+      params: {
+        workoutId: "new",
+        isSavedWorkout: "false",
+      },
     });
   };
 
@@ -155,10 +159,7 @@ export default function WorkoutList() {
             <Feather name="shuffle" size={height * 0.035} color="#32393d" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            className="p-2"
-            onPress={() => router.push("/(tabs)/inWorkout")}
-          >
+          <TouchableOpacity className="p-2" onPress={() => startEmptyWorkout()}>
             <Feather name="plus" size={height * 0.035} color="#32393d" />
           </TouchableOpacity>
         </View>
@@ -166,13 +167,6 @@ export default function WorkoutList() {
         <H3 className="mb-2" baseSize={14}>
           My Workouts
         </H3>
-        <Button
-          title="Start Empty Workout"
-          onPress={startEmptyWorkout}
-          fontSize={12}
-          height={20}
-          style={{ marginBottom: 20 }}
-        />
       </View>
 
       {/* Scrollable Workout List */}

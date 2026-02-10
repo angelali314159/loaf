@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
+  Image,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -12,6 +13,8 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
 import { Button, H3, H4, P } from "../../components/typography";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../utils/supabase";
 
 interface SetData {
   reps: string;
@@ -23,6 +26,13 @@ interface ExerciseData {
   exercise_lib_id: number;
   name: string;
   sets: SetData[];
+}
+
+interface PRData {
+  exercise_id: number;
+  exercise_name: string;
+  new_weight: number;
+  previous_weight: number;
 }
 
 function getTodayDateStr() {
@@ -39,6 +49,9 @@ export default function InWorkout() {
   const workoutId = params.workoutId as string;
   const workoutName = params.workoutName as string;
   const passedExercises = params.exercises as string;
+  const isSavedWorkout = params.isSavedWorkout === "true";
+
+  const { user } = useAuth();
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
@@ -47,6 +60,9 @@ export default function InWorkout() {
   // Exercises state
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Track if workout should be saved (toggleable via paw icon)
+  const [shouldSaveWorkout, setShouldSaveWorkout] = useState(isSavedWorkout);
 
   // Popup state
   const [showPopup, setShowPopup] = useState(false);
@@ -203,7 +219,97 @@ export default function InWorkout() {
     setShowExerciseList(false);
   };
 
-  const handleFinishWorkout = () => {
+  const saveWorkoutToHistory = async () => {
+    if (!user?.id) {
+      console.error("No user found");
+      return null;
+    }
+
+    try {
+      // Calculate duration in minutes
+      const durationMinutes = Math.floor(seconds / 60);
+
+      // Insert into workout_history
+      const { data: workoutHistoryData, error: workoutHistoryError } =
+        await supabase
+          .from("workout_history")
+          .insert({
+            profile_id: user.id,
+            workout_id:
+              workoutId !== "new" && shouldSaveWorkout
+                ? parseInt(workoutId)
+                : null,
+            duration_minutes: durationMinutes,
+            completed_at: new Date().toISOString(),
+          })
+          .select("workout_history_id")
+          .single();
+
+      if (workoutHistoryError) {
+        console.error("Error saving workout history:", workoutHistoryError);
+        throw workoutHistoryError;
+      }
+
+      const workoutHistoryId = workoutHistoryData.workout_history_id;
+
+      // Prepare exercise history records
+      const exerciseHistoryRecords = [];
+      for (const exercise of exercises) {
+        for (let i = 0; i < exercise.sets.length; i++) {
+          const set = exercise.sets[i];
+          exerciseHistoryRecords.push({
+            profile_id: user.id,
+            workout_history_id: workoutHistoryId,
+            exercise_id: exercise.exercise_lib_id,
+            set_number: i + 1,
+            reps: parseInt(set.reps) || 0,
+            weight: parseFloat(set.lbs) || 0,
+          });
+        }
+      }
+
+      // Insert exercise history records
+      if (exerciseHistoryRecords.length > 0) {
+        const { error: exerciseHistoryError } = await supabase
+          .from("exercise_history")
+          .insert(exerciseHistoryRecords);
+
+        if (exerciseHistoryError) {
+          console.error("Error saving exercise history:", exerciseHistoryError);
+          throw exerciseHistoryError;
+        }
+      }
+
+      console.log("Workout saved successfully with ID:", workoutHistoryId);
+      return workoutHistoryId;
+    } catch (error) {
+      console.error("Error in saveWorkoutToHistory:", error);
+      return null;
+    }
+  };
+
+  const checkForPRs = async (workoutHistoryId: number): Promise<PRData[]> => {
+    if (!user?.id) return [];
+
+    try {
+      const { data, error } = await supabase.rpc("check_workout_prs", {
+        p_profile_id: user.id,
+        p_workout_history_id: workoutHistoryId,
+      });
+
+      if (error) {
+        console.error("Error checking for PRs:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in checkForPRs:", error);
+      return [];
+    }
+  };
+
+  const handleFinishWorkout = async () => {
     // Check if all sets are completed
     const allSetsCompleted = exercises.every((exercise) =>
       exercise.sets.every((set) => set.checked),
@@ -214,6 +320,18 @@ export default function InWorkout() {
       return;
     }
 
+    // Save workout to history
+    const workoutHistoryId = await saveWorkoutToHistory();
+
+    if (!workoutHistoryId) {
+      console.error("Failed to save workout");
+      // Optionally show an error message to the user
+      return;
+    }
+
+    // Check for PRs
+    const prs = await checkForPRs(workoutHistoryId);
+
     // Calculate workout stats
     const totalReps = exercises.reduce(
       (sum, ex) =>
@@ -222,12 +340,14 @@ export default function InWorkout() {
     );
 
     const workoutData = {
+      workoutHistoryId: workoutHistoryId.toString(),
       workoutName: workoutName || "Workout",
       duration: seconds,
       exercises: exercises.length,
       sets: totalSets,
       totalReps: totalReps,
       weightLifted: totalLbs,
+      prs: JSON.stringify(prs),
     };
 
     // Navigate to workout complete page with data
@@ -276,9 +396,26 @@ export default function InWorkout() {
 
       {/* Top Section: Header */}
       <View className="px-6 pt-10 pb-6" style={{ marginTop: 20 }}>
-        <H3 baseSize={20} className="mb-4">
-          {getTodayDateStr()} Workout
-        </H3>
+        <View className="flex-row items-center justify-between mb-4">
+          <H3 baseSize={20} className="flex-1">
+            {getTodayDateStr()} Workout
+          </H3>
+          <TouchableOpacity
+            onPress={() => setShouldSaveWorkout(!shouldSaveWorkout)}
+          >
+            <Image
+              style={{
+                width: Dimensions.get("window").width * 0.08,
+                resizeMode: "contain",
+              }}
+              source={
+                shouldSaveWorkout
+                  ? require("../../assets/images/paw-filled.png")
+                  : require("../../assets/images/paw-outline.png")
+              }
+            />
+          </TouchableOpacity>
+        </View>
         {/* Stats Row */}
         <View className="flex-row items-stretch mb-4 mt-5">
           {/* Duration */}

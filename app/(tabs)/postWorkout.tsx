@@ -1,9 +1,17 @@
 import { Feather } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Dimensions,
+  Image,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Svg, {
   Defs,
   RadialGradient,
@@ -11,6 +19,8 @@ import Svg, {
   Rect as SvgRect,
 } from "react-native-svg";
 import { Button, H1, P } from "../../components/typography";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../utils/supabase";
 
 interface WorkoutStat {
   label: string;
@@ -27,11 +37,13 @@ interface WorkoutData {
   totalReps: number;
   weightLifted: number;
   prs?: number;
+  workoutHistoryId?: string;
 }
 
 export default function PostWorkout() {
   const params = useLocalSearchParams();
   const workoutDataParam = params.workoutData as string;
+  const { user } = useAuth();
 
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -39,13 +51,17 @@ export default function PostWorkout() {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isPicturesOpen, setIsPicturesOpen] = useState(true);
   const [isStatsOpen, setIsStatsOpen] = useState(true);
+  const [isPosting, setIsPosting] = useState(false);
+  const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
 
   const MAX_CHARACTERS = 1000;
+  const MAX_FILE_SIZE = 50 * 1024; // 50 KB - set in Supabase, can change later
 
   useEffect(() => {
     if (workoutDataParam) {
       try {
         const data: WorkoutData = JSON.parse(workoutDataParam);
+        setWorkoutData(data);
 
         // Format duration
         const hours = Math.floor(data.duration / 3600);
@@ -81,53 +97,69 @@ export default function PostWorkout() {
           },
         ]);
 
-        // Set default description
-        setDescription(`Completed ${data.workoutName}! 💪`);
+        setDescription(``);
       } catch (error) {
         console.error("Error parsing workout data:", error);
-        // Fallback to default stats
-        setStats([
-          { label: "Duration", value: "45 min", visible: true, icon: "clock" },
-          {
-            label: "Exercises",
-            value: "8 exercises",
-            visible: true,
-            icon: "dumbbell",
-          },
-          {
-            label: "Weight Lifted",
-            value: "2,500 lbs",
-            visible: true,
-            icon: "weight-hanging",
-          },
-          { label: "PRs", value: "3 PRs", visible: true, icon: "award" },
-        ]);
       }
-    } else {
-      // Default stats if no data passed
-      setStats([
-        { label: "Duration", value: "45 min", visible: true, icon: "clock" },
-        {
-          label: "Exercises",
-          value: "8 exercises",
-          visible: true,
-          icon: "dumbbell",
-        },
-        {
-          label: "Weight Lifted",
-          value: "2,500 lbs",
-          visible: true,
-          icon: "weight-hanging",
-        },
-        { label: "PRs", value: "3 PRs", visible: true, icon: "award" },
-      ]);
     }
   }, [workoutDataParam]);
+
+  const uriToBlob = async (uri: string): Promise<Blob> => {
+    const response = await fetch(uri);
+    if (!response.ok)
+      throw new Error(`Failed to fetch file: ${response.status}`);
+    const blob = await response.blob();
+    return blob;
+  };
+
+  const compressImage = async (uri: string): Promise<string | null> => {
+    try {
+      let quality = 0.8;
+      let width = 1024;
+
+      // Iteratively compress until under 50 KB
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          uri,
+          [{ resize: { width } }],
+          { compress: quality, format: ImageManipulator.SaveFormat.JPEG },
+        );
+
+        const blob = await uriToBlob(manipResult.uri);
+        const fileSize = blob.size;
+
+        if (fileSize <= MAX_FILE_SIZE) {
+          return manipResult.uri;
+        }
+
+        // Reduce quality and size more aggressively
+        quality = Math.max(0.1, quality - 0.15);
+        width = Math.max(400, Math.floor(width * 0.7));
+      }
+
+      // If still too large after 5 attempts, warn user
+      console.log(
+        "compressImage - Failed to compress under 50 KB after 5 attempts",
+      );
+      Alert.alert(
+        "Image too large",
+        "Unable to compress image below 50 KB. Please try a different image or take a new photo.",
+      );
+      return null;
+    } catch (error) {
+      console.error("Error compressing image:", error);
+      Alert.alert(
+        "Compression failed",
+        "Failed to process image. Please try again.",
+      );
+      return null;
+    }
+  };
 
   const pickImageFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      console.log("Photo library permission denied");
+      Alert.alert("Permission needed", "Please grant photo library access");
       return;
     }
 
@@ -135,29 +167,96 @@ export default function PostWorkout() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      const compressedUri = await compressImage(result.assets[0].uri);
+      if (compressedUri) {
+        setImageUri(compressedUri);
+      }
     }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      console.log("Camera permission denied");
+      Alert.alert("Permission needed", "Please grant camera access");
       return;
     }
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.8,
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      const compressedUri = await compressImage(result.assets[0].uri);
+      if (compressedUri) {
+        setImageUri(compressedUri);
+      }
+    }
+  };
+
+  const uploadImageToSupabase = async (uri: string): Promise<string | null> => {
+    if (!user?.id) return null;
+
+    try {
+      let blob: Blob;
+      try {
+        blob = await uriToBlob(uri);
+      } catch (err) {
+        console.error(
+          "uploadImageToSupabase - Could not convert file to blob:",
+          err,
+        );
+        Alert.alert("Error", `Could not convert file to blob: ${err}`);
+        return null;
+      }
+
+      if (blob.size === 0) {
+        console.error("uploadImageToSupabase - Empty file detected");
+        Alert.alert("Error", "Image file is empty. Please try again.");
+        return null;
+      }
+
+      // Double-check file size (should already be under limit from compressImage)
+      if (blob.size > MAX_FILE_SIZE) {
+        console.error("uploadImageToSupabase - File too large:", blob.size);
+        Alert.alert(
+          "File too large",
+          `Image is ${Math.round(blob.size / 1024)} KB, must be under 50 KB`,
+        );
+        return null;
+      }
+
+      // Build path and content type
+      const filename = uri.split("/").pop() || `${Date.now()}.jpg`;
+      const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+      const contentType = ext === "png" ? "image/png" : "image/jpeg";
+      const path = `${user.id}/${Date.now()}-${filename}`;
+
+      // Upload to Supabase storage
+      const { data, error: uploadError } = await supabase.storage
+        .from("post-images")
+        .upload(path, blob, { contentType, upsert: false });
+
+      if (uploadError) {
+        console.error("uploadImageToSupabase - Upload error:", uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("post-images").getPublicUrl(path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error("uploadImageToSupabase - Error uploading image:", error);
+      Alert.alert("Upload failed", "Failed to upload image. Please try again.");
+      return null;
     }
   };
 
@@ -167,10 +266,69 @@ export default function PostWorkout() {
     setStats(updatedStats);
   };
 
-  const handlePost = () => {
-    // Handle posting workout
-    console.log("Posting workout:", { description, imageUri, stats });
-    router.push("/(tabs)/landingMain");
+  const handlePost = async () => {
+    if (!user?.id || !workoutData) {
+      Alert.alert("Error", "Missing user or workout data");
+      return;
+    }
+
+    try {
+      setIsPosting(true);
+
+      // Upload image if exists
+      let imageUrl: string | null = null;
+      if (imageUri) {
+        imageUrl = await uploadImageToSupabase(imageUri);
+        if (!imageUrl) {
+          setIsPosting(false);
+          return; // Upload failed, don't proceed
+        }
+      }
+
+      // Prepare visible stats
+      const visibleStats = stats
+        .filter((stat) => stat.visible)
+        .map((stat) => ({
+          label: stat.label,
+          value: stat.value,
+          icon: stat.icon,
+        }));
+
+      // Prepare workout stats for storage
+      const workoutStats = {
+        duration: workoutData.duration,
+        exercises: workoutData.exercises,
+        sets: workoutData.sets,
+        totalReps: workoutData.totalReps,
+        weightLifted: workoutData.weightLifted,
+        prs: workoutData.prs || 0,
+      };
+
+      // Insert workout post
+      const { error: postError } = await supabase.from("workout_posts").insert({
+        profile_id: user.id,
+        workout_history_id: workoutData.workoutHistoryId
+          ? parseInt(workoutData.workoutHistoryId)
+          : null,
+        description: description.trim() || null,
+        image_url: imageUrl,
+        visible_stats: visibleStats,
+        workout_stats: workoutStats,
+      });
+
+      if (postError) {
+        console.error("Error creating post:", postError);
+        throw postError;
+      }
+
+      Alert.alert("Success!", "Your workout has been posted");
+      router.push("/(tabs)/landingMain");
+    } catch (error) {
+      console.error("Error posting workout:", error);
+      Alert.alert("Error", "Failed to post workout. Please try again.");
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const height = Dimensions.get("screen").height;
@@ -319,7 +477,7 @@ export default function PostWorkout() {
                 </View>
                 {imageUri && (
                   <View style={{ marginTop: 12, position: "relative" }}>
-                    <img
+                    <Image
                       source={{ uri: imageUri }}
                       style={{
                         width: "100%",
@@ -420,11 +578,12 @@ export default function PostWorkout() {
           }}
         >
           <Button
-            title="Post Workout"
+            title={isPosting ? "Posting..." : "Post Workout"}
             onPress={handlePost}
             color="yellow"
             fontColor="blue"
             width="100%"
+            disabled={isPosting}
           />
           <Button
             title="Home"
@@ -432,6 +591,7 @@ export default function PostWorkout() {
             color="blue"
             fontColor="white"
             width="100%"
+            disabled={isPosting}
           />
         </View>
       </View>

@@ -124,7 +124,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="createWorkout"
+        name="settings"
         options={{
           href: null, // This hides the tab
         }}

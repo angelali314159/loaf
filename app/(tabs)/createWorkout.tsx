@@ -10,11 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 interface Exercise {
   exercise_lib_id: number;
@@ -119,7 +119,9 @@ export default function CreateWorkout() {
 
   const handleRemoveExercise = (exercise: Exercise) => {
     setExerciseBlocks((prev) =>
-      prev.filter((b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id),
+      prev.filter(
+        (b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id,
+      ),
     );
   };
 
@@ -128,7 +130,12 @@ export default function CreateWorkout() {
       prev.map((b) => {
         if (b.exercise.exercise_lib_id !== exerciseId) return b;
         const nextNum = b.sets.length + 1;
-        const newRow: SetRow = { setNumber: nextNum, reps: 0, lbs: 0, done: false };
+        const newRow: SetRow = {
+          setNumber: nextNum,
+          reps: 0,
+          lbs: 0,
+          done: false,
+        };
         return { ...b, sets: [...b.sets, newRow] };
       }),
     );
@@ -269,7 +276,10 @@ export default function CreateWorkout() {
   return (
     <View className="flex-1 bg-white">
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0, right: 0 }}
+      >
         <Svg
           height={Dimensions.get("screen").height * 0.5}
           width={Dimensions.get("screen").width}
@@ -300,11 +310,16 @@ export default function CreateWorkout() {
           {/* Header */}
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center">
-              <TouchableOpacity onPress={() => router.back()} className="pr-3 py-2">
+              <TouchableOpacity
+                onPress={() => router.back()}
+                className="pr-3 py-2"
+              >
                 <Feather name="arrow-left" size={26} color="#32393d" />
               </TouchableOpacity>
 
-              <Text style={{ fontSize: 34, fontWeight: "700", color: "#32393d" }}>
+              <Text
+                style={{ fontSize: 34, fontWeight: "700", color: "#32393d" }}
+              >
                 {workoutName}
               </Text>
             </View>
@@ -369,7 +384,9 @@ export default function CreateWorkout() {
               disabled={saving}
               activeOpacity={0.85}
               className="flex-1 mr-4 rounded-full py-3 items-center"
-              style={{ backgroundColor: finishButtonIsDark ? "#2E3742" : "#E8E1CF" }}
+              style={{
+                backgroundColor: finishButtonIsDark ? "#2E3742" : "#E8E1CF",
+              }}
             >
               <Text
                 style={{
@@ -388,7 +405,9 @@ export default function CreateWorkout() {
               className="flex-1 rounded-full py-3 items-center"
               style={{ backgroundColor: "#FCDE8C" }}
             >
-              <Text style={{ fontSize: 12, fontWeight: "700", color: "#32393d" }}>
+              <Text
+                style={{ fontSize: 12, fontWeight: "700", color: "#32393d" }}
+              >
                 Add Exercise
               </Text>
             </TouchableOpacity>
@@ -404,12 +423,20 @@ export default function CreateWorkout() {
                   <View key={block.exercise.exercise_lib_id} className="pb-4">
                     {/* Exercise header row */}
                     <View className="flex-row items-center justify-between">
-                      <Text style={{ fontSize: 16, fontWeight: "400", color: "#32393d" }}>
+                      <Text
+                        style={{
+                          fontSize: 16,
+                          fontWeight: "400",
+                          color: "#32393d",
+                        }}
+                      >
                         {block.exercise.name}
                       </Text>
 
                       <TouchableOpacity
-                        onPress={() => addSetRow(block.exercise.exercise_lib_id)}
+                        onPress={() =>
+                          addSetRow(block.exercise.exercise_lib_id)
+                        }
                         className="p-2"
                         activeOpacity={0.7}
                       >
@@ -420,17 +447,35 @@ export default function CreateWorkout() {
                     {/* Table header — 5 evenly spaced columns, no extra left/right padding */}
                     <View style={{ ...fiveColRowStyle, marginTop: 14 }}>
                       <View style={fiveColCellStyle}>
-                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6A6A6A",
+                            textAlign: "center",
+                          }}
+                        >
                           Sets
                         </Text>
                       </View>
                       <View style={fiveColCellStyle}>
-                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6A6A6A",
+                            textAlign: "center",
+                          }}
+                        >
                           Reps
                         </Text>
                       </View>
                       <View style={fiveColCellStyle}>
-                        <Text style={{ fontSize: 14, color: "#6A6A6A", textAlign: "center" }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            color: "#6A6A6A",
+                            textAlign: "center",
+                          }}
+                        >
                           lbs
                         </Text>
                       </View>
@@ -446,7 +491,13 @@ export default function CreateWorkout() {
                       >
                         {/* 1: Sets */}
                         <View style={fiveColCellStyle}>
-                          <Text style={{ fontSize: 14, color: "#4D4D4D", textAlign: "center" }}>
+                          <Text
+                            style={{
+                              fontSize: 14,
+                              color: "#4D4D4D",
+                              textAlign: "center",
+                            }}
+                          >
                             {row.setNumber}
                           </Text>
                         </View>
@@ -501,7 +552,10 @@ export default function CreateWorkout() {
                         <View style={fiveColCellStyle}>
                           <TouchableOpacity
                             onPress={() =>
-                              toggleDone(block.exercise.exercise_lib_id, row.setNumber)
+                              toggleDone(
+                                block.exercise.exercise_lib_id,
+                                row.setNumber,
+                              )
                             }
                             activeOpacity={0.8}
                             style={{
@@ -510,7 +564,9 @@ export default function CreateWorkout() {
                               borderRadius: 7,
                               borderWidth: 1.5,
                               borderColor: "#3A3A3A",
-                              backgroundColor: row.done ? "#FCDE8C" : "transparent",
+                              backgroundColor: row.done
+                                ? "#FCDE8C"
+                                : "transparent",
                               alignItems: "center",
                               justifyContent: "center",
                             }}
@@ -525,7 +581,10 @@ export default function CreateWorkout() {
                         <View style={fiveColCellStyle}>
                           <TouchableOpacity
                             onPress={() =>
-                              removeSetRow(block.exercise.exercise_lib_id, row.setNumber)
+                              removeSetRow(
+                                block.exercise.exercise_lib_id,
+                                row.setNumber,
+                              )
                             }
                             activeOpacity={0.6}
                           >

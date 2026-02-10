@@ -173,6 +173,7 @@ export default function WorkoutList() {
       <ScrollView
         className="flex-1 mx-8"
         contentContainerStyle={{ paddingBottom: height * 0.1 }}
+        showsVerticalScrollIndicator={false}
       >
         <View className="mb-8">
           {loading ? (

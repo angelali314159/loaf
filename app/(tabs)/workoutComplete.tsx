@@ -61,7 +61,7 @@ export default function WorkoutComplete() {
   const handleShareWorkout = () => {
     router.push({
       pathname: "/(tabs)/postWorkout",
-      params: { workoutData },
+      params: { workoutData: workoutDataString },
     });
   };
 

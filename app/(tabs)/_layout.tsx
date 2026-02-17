@@ -107,6 +107,7 @@ export default function TabLayout() {
         name="index"
         options={{
           href: null, // This hides the tab
+          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
         }}
       />
       <Tabs.Screen
@@ -120,6 +121,30 @@ export default function TabLayout() {
         options={{
           href: null, // This hides the tab
           tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="friendSearch"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="generateWorkout"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
+      <Tabs.Screen
+        name="generatedPreview"
+        options={{
+          href: null, // This hides the tab
         }}
       />
       <Tabs.Screen

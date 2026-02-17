@@ -205,7 +205,7 @@ function ExercisePreviewContent() {
                 }}
               >
                 <TouchableOpacity
-                  onPress={() => router.push("/createWorkout")}
+                  onPress={() => router.push("/inWorkout")}
                   activeOpacity={0.8}
                   style={{
                     width: 40,

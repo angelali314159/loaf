@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -18,19 +19,21 @@ interface UserProfile {
   name: string;
 }
 
+interface VisibleStat {
+  label: string;
+  value: string;
+  icon: string;
+}
+
 interface FriendPost {
   workout_post_id: number;
+  profile_id: string;
   username: string;
   image_url: string;
   description: string;
   created_at: string;
-  workout_stats: {
-    duration: number;
-    exercises: number;
-    sets: number;
-    weightLifted: number;
-  };
-  likes: number;
+  visible_stats: VisibleStat[];
+  like_count: number;
   isLiked: boolean;
 }
 
@@ -157,7 +160,8 @@ export default function Profile() {
           image_url,
           description,
           created_at,
-          workout_stats,
+          visible_stats,
+          like_count,
           profiles!inner(username)
         `,
         )
@@ -175,12 +179,13 @@ export default function Profile() {
       // Format posts data
       const formattedPosts: FriendPost[] = (posts || []).map((post) => ({
         workout_post_id: post.workout_post_id,
+        profile_id: post.profile_id,
         username: (post.profiles as any).username,
         image_url: post.image_url || "",
         description: post.description || "",
         created_at: post.created_at,
-        workout_stats: post.workout_stats,
-        likes: 0, // TO-DO: Implement likes count
+        visible_stats: post.visible_stats || [],
+        like_count: post.like_count || 0,
         isLiked: false, // TO-DO: Check if user liked this post
       }));
 
@@ -291,7 +296,7 @@ export default function Profile() {
       <ScrollView
         className={`flex-1`}
         showsVerticalScrollIndicator={false}
-        style={{ marginTop: height * 0.08 }}
+        style={{ marginTop: height * 0.08, marginBottom: height * 0.3 }}
       >
         {/* Header with Name and Settings */}
         <View className="flex-row justify-between items-center px-6 pt-16 pb-4">
@@ -360,11 +365,6 @@ export default function Profile() {
               >
                 {/* Post Header */}
                 <View className="flex-row items-center p-4 pb-2">
-                  <View className="w-10 h-10 rounded-full bg-[#FCDE8C] items-center justify-center mr-3">
-                    <P className="text-[#32393d] font-bold">
-                      {post.username.charAt(0).toUpperCase()}
-                    </P>
-                  </View>
                   <View className="flex-1">
                     <P className="text-[#32393d] font-semibold">
                       {post.username}
@@ -398,56 +398,51 @@ export default function Profile() {
                   </View>
                 )}
 
-                {/* Stats Icons */}
-                <View className="flex-row justify-around py-3 px-4 border-b border-[#DADADA]">
-                  <View className="items-center">
-                    <Feather name="clock" size={20} color="#32393d" />
-                    <P className="text-xs text-[#565656] mt-1">
-                      {formatDuration(post.workout_stats.duration)}
-                    </P>
+                {/* Stats Icons with Like Button */}
+                <View className="flex-row items-center py-3 px-4 border-b border-[#DADADA]">
+                  {/* Stats - left aligned */}
+                  <View className="flex-row flex-1 justify-around">
+                    {post.visible_stats &&
+                      post.visible_stats.map((stat, index) => (
+                        <View key={index} className="items-center">
+                          <FontAwesome5
+                            name={stat.icon}
+                            size={20}
+                            color="#32393d"
+                          />
+                          <P className="text-xs text-[#565656] mt-1">
+                            {stat.value}
+                          </P>
+                        </View>
+                      ))}
                   </View>
-                  <View className="items-center">
-                    <Feather name="list" size={20} color="#32393d" />
-                    <P className="text-xs text-[#565656] mt-1">
-                      {post.workout_stats.exercises} ex
-                    </P>
-                  </View>
-                  <View className="items-center">
-                    <Feather name="repeat" size={20} color="#32393d" />
-                    <P className="text-xs text-[#565656] mt-1">
-                      {post.workout_stats.sets} sets
-                    </P>
-                  </View>
-                  <View className="items-center">
-                    <Feather name="trending-up" size={20} color="#32393d" />
-                    <P className="text-xs text-[#565656] mt-1">
-                      {post.workout_stats.weightLifted} lbs
-                    </P>
-                  </View>
-                </View>
 
-                {/* Like Button and Caption */}
-                <View className="p-4">
+                  {/* Like button */}
                   <TouchableOpacity
                     onPress={() => handleLikePost(post.workout_post_id)}
-                    className="flex-row items-center mb-2"
+                    className="flex-row items-center ml-4"
                   >
-                    <Feather
-                      name={post.isLiked ? "heart" : "heart"}
-                      size={20}
-                      color={post.isLiked ? "#DD6C6A" : "#32393d"}
-                      fill={post.isLiked ? "#DD6C6A" : "none"}
+                    <Image
+                      source={
+                        post.isLiked
+                          ? require("../../assets/images/paw-filled.png")
+                          : require("../../assets/images/paw-outline.png")
+                      }
+                      style={{ width: 24, height: 24 }}
+                      resizeMode="contain"
                     />
-                    <P className="ml-2 text-[#565656]">{post.likes} likes</P>
                   </TouchableOpacity>
-
-                  {post.description && (
-                    <P className="text-[#32393d]">
-                      <P className="font-semibold">{post.username}</P>{" "}
-                      {post.description}
-                    </P>
+                  {post.profile_id === user?.id && (
+                    <P className="text-[#565656] mr-2">{post.like_count}</P>
                   )}
                 </View>
+
+                {/* Caption */}
+                {post.description && (
+                  <View className="p-4">
+                    <P className="text-[#32393d]">{post.description}</P>
+                  </View>
+                )}
               </View>
             ))
           )}

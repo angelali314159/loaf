@@ -32,7 +32,7 @@ interface ButtonProps {
   onPress: () => void;
   disabled?: boolean;
   /** background color key: 'blue' -> #2D3541, 'yellow' -> #fcde8c */
-  color?: "blue" | "yellow";
+  color?: "blue" | "yellow" | "black" | "beige";
   /** font color key: 'blue' | 'yellow' | 'white' */
   fontColor?: "blue" | "yellow" | "white";
   /** border color key: 'blue' | 'yellow' | 'white' */
@@ -48,6 +48,8 @@ interface ButtonProps {
 const BG_MAP: Record<string, string> = {
   blue: "#2D3541",
   yellow: "#fcde8c",
+  black: "#18202A",
+  beige: "#F1EAD2"
 };
 
 const FONT_MAP: Record<string, string> = {

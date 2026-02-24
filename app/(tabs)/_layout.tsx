@@ -14,17 +14,17 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: (props) => <TabBarItem {...props} />,
         tabBarBackground: TabBarBackground,
-        tabBarActiveTintColor: "#000000", // Black for active/selected
-        tabBarInactiveTintColor: "#FCDE8C", // Yellow for inactive/unselected
+        tabBarActiveTintColor: "#000000",
+        tabBarInactiveTintColor: "#FCDE8C",
         tabBarStyle: Platform.select({
           default: {
             position: "absolute",
-            backgroundColor: "transparent", // Make background transparent for overlay effect
-            borderRadius: width * 0.13, // Oval shape
-            marginHorizontal: width * 0.02, // Add some margin from edges
-            marginBottom: height * 0.05, // Lift it up from bottom
-            height: height * 0.09, // Make it taller for better oval shape
-            borderTopWidth: 0, // Remove default border
+            backgroundColor: "transparent",
+            borderRadius: width * 0.13,
+            marginHorizontal: width * 0.02,
+            marginBottom: height * 0.05,
+            height: height * 0.09,
+            borderTopWidth: 0,
           },
         }),
         tabBarLabelStyle: {
@@ -114,6 +114,7 @@ export default function TabLayout() {
         name="workoutComplete"
         options={{
           href: null, // This hides the tab
+          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
         }}
       />
       <Tabs.Screen

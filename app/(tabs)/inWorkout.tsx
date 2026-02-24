@@ -1,7 +1,8 @@
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   Image,
   ScrollView,
@@ -15,6 +16,10 @@ import ExerciseList from "../../components/ExerciseList";
 import PopupMessage from "../../components/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { ExerciseLibraryProvider } from "../../contexts/ExerciseLibraryContext";
+import {
+  ExerciseStatsProvider,
+  useExerciseStats,
+} from "../../contexts/ExerciseStatsContext";
 import { supabase } from "../../utils/supabase";
 
 interface Exercise {
@@ -30,6 +35,10 @@ type SetRow = {
   reps: number;
   lbs: number;
   done: boolean;
+  isPR: boolean;
+  showConfetti: boolean;
+  previousReps: number | null; // For showing placeholder
+  previousLbs: number | null; // For showing placeholder
 };
 
 type ExerciseBlock = {
@@ -74,6 +83,87 @@ const fiveColCellStyle = {
   alignItems: "center" as const,
 };
 
+function ConfettiAnimation({ onComplete }: { onComplete: () => void }) {
+  const particles = useRef(
+    Array.from({ length: 12 }, () => ({
+      x: new Animated.Value(0),
+      y: new Animated.Value(0),
+      opacity: new Animated.Value(1),
+      scale: new Animated.Value(1),
+    })),
+  ).current;
+
+  useEffect(() => {
+    const animations = particles.map((particle, index) => {
+      const angle = (index / 12) * 2 * Math.PI;
+      const distance = 30 + Math.random() * 20;
+
+      return Animated.parallel([
+        Animated.timing(particle.x, {
+          toValue: Math.cos(angle) * distance,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(particle.y, {
+          toValue: Math.sin(angle) * distance - 20,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(particle.opacity, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(particle.scale, {
+          toValue: 0.3,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    Animated.parallel(animations).start(() => {
+      onComplete();
+    });
+  }, []);
+
+  const colors = [
+    "#FFD700",
+    "#FFA500",
+    "#FF6347",
+    "#32CD32",
+    "#1E90FF",
+    "#FF69B4",
+  ];
+
+  return (
+    <View
+      style={{ position: "absolute", left: -15, top: 0, width: 30, height: 30 }}
+    >
+      {particles.map((particle, index) => (
+        <Animated.View
+          key={index}
+          style={{
+            position: "absolute",
+            left: 15,
+            top: 15,
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: colors[index % colors.length],
+            transform: [
+              { translateX: particle.x },
+              { translateY: particle.y },
+              { scale: particle.scale },
+            ],
+            opacity: particle.opacity,
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
 function InWorkoutContent() {
   const params = useLocalSearchParams();
   const workoutId = params.workoutId as string;
@@ -81,8 +171,26 @@ function InWorkoutContent() {
   const passedExercises = params.exercises as string;
   const isSavedWorkout = params.isSavedWorkout === "true";
 
+  // Determine the display name for the workout
+  const displayWorkoutName =
+    workoutName && workoutName.trim()
+      ? workoutName
+      : `${getTodayDateStr()} Workout`;
+
   const { user } = useAuth();
   const router = useRouter();
+
+  // Access exercise stats from context
+  const {
+    getStatsByExerciseId,
+    getLastPerformance,
+    fetchLastPerformanceForExercises,
+  } = useExerciseStats();
+
+  // Track PRs achieved during this workout
+  const [achievedPRs, setAchievedPRs] = useState<Map<number, PRData>>(
+    new Map(),
+  );
 
   // Timer state
   const [seconds, setSeconds] = useState(0);
@@ -111,13 +219,20 @@ function InWorkoutContent() {
   );
 
   const totalSets = useMemo(
-    () => exerciseBlocks.reduce((sum, b) => sum + b.sets.length, 0),
+    () =>
+      exerciseBlocks.reduce(
+        (sum, b) => sum + b.sets.filter((s) => s.done).length,
+        0,
+      ),
     [exerciseBlocks],
   );
 
   const totalLbs = useMemo(() => {
     return exerciseBlocks.reduce((sum, b) => {
-      return sum + b.sets.reduce((s2, r) => s2 + r.reps * r.lbs, 0);
+      return (
+        sum +
+        b.sets.filter((s) => s.done).reduce((s2, r) => s2 + r.reps * r.lbs, 0)
+      );
     }, 0);
   }, [exerciseBlocks]);
 
@@ -134,7 +249,7 @@ function InWorkoutContent() {
     loadWorkoutData();
   }, [workoutId, passedExercises]);
 
-  const loadWorkoutData = () => {
+  const loadWorkoutData = async () => {
     if (workoutId === "new") {
       setExerciseBlocks([]);
       setLoading(false);
@@ -144,19 +259,79 @@ function InWorkoutContent() {
     if (passedExercises) {
       try {
         const parsed = JSON.parse(passedExercises);
-        const formattedExercises: ExerciseBlock[] = parsed.map((item: any) => ({
-          exercise: {
-            exercise_lib_id: item.exercise_lib_id,
-            name: item.name,
-            category: item.category || null,
-            equipment: item.equipment || null,
-          },
-          sets: [
-            { setNumber: 1, reps: 0, lbs: 0, done: false },
-            { setNumber: 2, reps: 0, lbs: 0, done: false },
-            { setNumber: 3, reps: 0, lbs: 0, done: false },
-          ],
-        }));
+        const exerciseIds = parsed.map((item: any) => item.exercise_lib_id);
+
+        // Fetch last performance for all exercises
+        await fetchLastPerformanceForExercises(exerciseIds);
+
+        const formattedExercises: ExerciseBlock[] = parsed.map((item: any) => {
+          const lastPerf = getLastPerformance(item.exercise_lib_id);
+
+          if (lastPerf && lastPerf.length > 0) {
+            // Use previous performance as template
+            return {
+              exercise: {
+                exercise_lib_id: item.exercise_lib_id,
+                name: item.name,
+                category: item.category || null,
+                equipment: item.equipment || null,
+              },
+              sets: lastPerf.map((set) => ({
+                setNumber: set.set_number,
+                reps: 0,
+                lbs: 0,
+                done: false,
+                isPR: false,
+                showConfetti: false,
+                previousReps: set.reps,
+                previousLbs: set.weight,
+              })),
+            };
+          }
+
+          // Default to 3 empty sets if no history
+          return {
+            exercise: {
+              exercise_lib_id: item.exercise_lib_id,
+              name: item.name,
+              category: item.category || null,
+              equipment: item.equipment || null,
+            },
+            sets: [
+              {
+                setNumber: 1,
+                reps: 0,
+                lbs: 0,
+                done: false,
+                isPR: false,
+                showConfetti: false,
+                previousReps: null,
+                previousLbs: null,
+              },
+              {
+                setNumber: 2,
+                reps: 0,
+                lbs: 0,
+                done: false,
+                isPR: false,
+                showConfetti: false,
+                previousReps: null,
+                previousLbs: null,
+              },
+              {
+                setNumber: 3,
+                reps: 0,
+                lbs: 0,
+                done: false,
+                isPR: false,
+                showConfetti: false,
+                previousReps: null,
+                previousLbs: null,
+              },
+            ],
+          };
+        });
+
         setExerciseBlocks(formattedExercises);
         setLoading(false);
       } catch (error) {
@@ -172,27 +347,82 @@ function InWorkoutContent() {
 
   const handleAddExercises = () => setShowExerciseList(true);
 
-  const handleSelectExercise = (exercise: Exercise) => {
-    setExerciseBlocks((prev) => {
-      const exists = prev.some(
-        (b) => b.exercise.exercise_lib_id === exercise.exercise_lib_id,
-      );
+  const handleSelectExercise = async (exercise: Exercise) => {
+    // Check if exercise exists
+    const exists = exerciseBlocks.some(
+      (b) => b.exercise.exercise_lib_id === exercise.exercise_lib_id,
+    );
 
-      if (exists) {
-        return prev.filter(
+    if (exists) {
+      setExerciseBlocks((prev) =>
+        prev.filter(
           (b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id,
-        );
+        ),
+      );
+      return;
+    }
+
+    // Fetch last performance for this exercise
+    await fetchLastPerformanceForExercises([exercise.exercise_lib_id]);
+    const lastPerf = getLastPerformance(exercise.exercise_lib_id);
+
+    setExerciseBlocks((prev) => {
+      if (lastPerf && lastPerf.length > 0) {
+        // Use previous performance as template
+        return [
+          ...prev,
+          {
+            exercise,
+            sets: lastPerf.map((set) => ({
+              setNumber: set.set_number,
+              reps: 0,
+              lbs: 0,
+              done: false,
+              isPR: false,
+              showConfetti: false,
+              previousReps: set.reps,
+              previousLbs: set.weight,
+            })),
+          },
+        ];
       }
 
-      // Auto-fill with 3 default sets
+      // Default to 3 empty sets if no history
       return [
         ...prev,
         {
           exercise,
           sets: [
-            { setNumber: 1, reps: 0, lbs: 0, done: false },
-            { setNumber: 2, reps: 0, lbs: 0, done: false },
-            { setNumber: 3, reps: 0, lbs: 0, done: false },
+            {
+              setNumber: 1,
+              reps: 0,
+              lbs: 0,
+              done: false,
+              isPR: false,
+              showConfetti: false,
+              previousReps: null,
+              previousLbs: null,
+            },
+            {
+              setNumber: 2,
+              reps: 0,
+              lbs: 0,
+              done: false,
+              isPR: false,
+              showConfetti: false,
+              previousReps: null,
+              previousLbs: null,
+            },
+            {
+              setNumber: 3,
+              reps: 0,
+              lbs: 0,
+              done: false,
+              isPR: false,
+              showConfetti: false,
+              previousReps: null,
+              previousLbs: null,
+            },
           ],
         },
       ];
@@ -205,6 +435,12 @@ function InWorkoutContent() {
         (b) => b.exercise.exercise_lib_id !== exercise.exercise_lib_id,
       ),
     );
+    // Remove any PRs for this exercise
+    setAchievedPRs((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(exercise.exercise_lib_id);
+      return newMap;
+    });
   };
 
   const addSetRow = (exerciseId: number) => {
@@ -217,6 +453,10 @@ function InWorkoutContent() {
           reps: 0,
           lbs: 0,
           done: false,
+          isPR: false,
+          showConfetti: false,
+          previousReps: null,
+          previousLbs: null,
         };
         return { ...b, sets: [...b.sets, newRow] };
       }),
@@ -232,16 +472,173 @@ function InWorkoutContent() {
         return { ...b, sets: renumbered };
       }),
     );
+    // Recalculate PRs for this exercise after removing a set
+    recalculatePRsForExercise(exerciseId);
+  };
+
+  const recalculatePRsForExercise = (exerciseId: number) => {
+    setExerciseBlocks((prev) => {
+      const block = prev.find((b) => b.exercise.exercise_lib_id === exerciseId);
+      if (!block) return prev;
+
+      const stats = getStatsByExerciseId(exerciseId);
+      const previousMaxWeight = stats?.max_weight ?? 0;
+      const isFirstTimeExercise = !stats;
+
+      // Find the highest weight among completed sets
+      const completedSets = block.sets.filter((s) => s.done && s.lbs > 0);
+      const maxWeightInWorkout = Math.max(
+        0,
+        ...completedSets.map((s) => s.lbs),
+      );
+
+      if (
+        completedSets.length > 0 &&
+        (isFirstTimeExercise || maxWeightInWorkout > previousMaxWeight)
+      ) {
+        setAchievedPRs((prevPRs) => {
+          const newMap = new Map(prevPRs);
+          newMap.set(exerciseId, {
+            exercise_id: exerciseId,
+            exercise_name: block.exercise.name,
+            new_weight: maxWeightInWorkout,
+            previous_weight: previousMaxWeight,
+          });
+          return newMap;
+        });
+      } else {
+        setAchievedPRs((prevPRs) => {
+          const newMap = new Map(prevPRs);
+          newMap.delete(exerciseId);
+          return newMap;
+        });
+      }
+
+      return prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        return {
+          ...b,
+          sets: b.sets.map((s) => ({
+            ...s,
+            isPR:
+              s.done &&
+              s.lbs > 0 &&
+              s.lbs === maxWeightInWorkout &&
+              (isFirstTimeExercise || s.lbs > previousMaxWeight),
+            showConfetti: false,
+          })),
+        };
+      });
+    });
   };
 
   const toggleDone = (exerciseId: number, setNumber: number) => {
     setExerciseBlocks((prev) =>
       prev.map((b) => {
         if (b.exercise.exercise_lib_id !== exerciseId) return b;
+
+        const updatedSets = b.sets.map((r) => {
+          if (r.setNumber !== setNumber) return r;
+
+          const newDoneState = !r.done;
+
+          if (newDoneState) {
+            // Check if this is a PR
+            const stats = getStatsByExerciseId(exerciseId);
+            const previousMaxWeight = stats?.max_weight ?? 0;
+            const isFirstTimeExercise = !stats;
+            const currentPR = achievedPRs.get(exerciseId);
+            const currentMaxInWorkout = currentPR?.new_weight ?? 0;
+
+            // It's a PR if:
+            // 1. First time doing this exercise AND weight > 0, OR
+            // 2. Weight is greater than previous max AND greater than or equal to current workout max
+            const isPR =
+              (isFirstTimeExercise && r.lbs > 0) ||
+              (r.lbs > previousMaxWeight && r.lbs >= currentMaxInWorkout);
+
+            if (isPR && r.lbs > 0) {
+              // Update achieved PRs
+              setAchievedPRs((prevPRs) => {
+                const newMap = new Map(prevPRs);
+                newMap.set(exerciseId, {
+                  exercise_id: exerciseId,
+                  exercise_name: b.exercise.name,
+                  new_weight: r.lbs,
+                  previous_weight: previousMaxWeight,
+                });
+                return newMap;
+              });
+            }
+
+            return {
+              ...r,
+              done: true,
+              isPR: isPR && r.lbs > 0,
+              showConfetti: isPR && r.lbs > 0,
+            };
+          } else {
+            // Unchecking - will recalculate PRs after state update
+            return { ...r, done: false, isPR: false, showConfetti: false };
+          }
+        });
+
+        // Recalculate which sets should show as PR (only the highest weight set)
+        const completedSets = updatedSets.filter((s) => s.done && s.lbs > 0);
+        const stats = getStatsByExerciseId(exerciseId);
+        const previousMaxWeight = stats?.max_weight ?? 0;
+        const isFirstTimeExercise = !stats;
+        const maxWeightInWorkout = Math.max(
+          0,
+          ...completedSets.map((s) => s.lbs),
+        );
+
+        // Update achieved PRs based on final state
+        if (
+          completedSets.length > 0 &&
+          (isFirstTimeExercise || maxWeightInWorkout > previousMaxWeight)
+        ) {
+          setAchievedPRs((prevPRs) => {
+            const newMap = new Map(prevPRs);
+            newMap.set(exerciseId, {
+              exercise_id: exerciseId,
+              exercise_name: b.exercise.name,
+              new_weight: maxWeightInWorkout,
+              previous_weight: previousMaxWeight,
+            });
+            return newMap;
+          });
+        } else {
+          // No PR for this exercise - remove from achievedPRs
+          setAchievedPRs((prevPRs) => {
+            const newMap = new Map(prevPRs);
+            newMap.delete(exerciseId);
+            return newMap;
+          });
+        }
+
+        const finalSets = updatedSets.map((s) => ({
+          ...s,
+          isPR:
+            s.done &&
+            s.lbs > 0 &&
+            s.lbs === maxWeightInWorkout &&
+            (isFirstTimeExercise || s.lbs > previousMaxWeight),
+        }));
+
+        return { ...b, sets: finalSets };
+      }),
+    );
+  };
+
+  const clearConfetti = (exerciseId: number, setNumber: number) => {
+    setExerciseBlocks((prev) =>
+      prev.map((b) => {
+        if (b.exercise.exercise_lib_id !== exerciseId) return b;
         return {
           ...b,
           sets: b.sets.map((r) =>
-            r.setNumber === setNumber ? { ...r, done: !r.done } : r,
+            r.setNumber === setNumber ? { ...r, showConfetti: false } : r,
           ),
         };
       }),
@@ -259,12 +656,61 @@ function InWorkoutContent() {
     setExerciseBlocks((prev) =>
       prev.map((b) => {
         if (b.exercise.exercise_lib_id !== exerciseId) return b;
-        return {
-          ...b,
-          sets: b.sets.map((r) =>
-            r.setNumber === setNumber ? { ...r, [field]: asNum } : r,
-          ),
-        };
+
+        const updatedSets = b.sets.map((r) =>
+          r.setNumber === setNumber ? { ...r, [field]: asNum } : r,
+        );
+
+        // If changing lbs, recalculate PRs for completed sets
+        if (field === "lbs") {
+          const completedSets = updatedSets.filter((s) => s.done && s.lbs > 0);
+          const stats = getStatsByExerciseId(exerciseId);
+          const previousMaxWeight = stats?.max_weight ?? 0;
+          const isFirstTimeExercise = !stats;
+          const maxWeightInWorkout = Math.max(
+            0,
+            ...completedSets.map((s) => s.lbs),
+          );
+
+          // Update achieved PRs
+          if (
+            completedSets.length > 0 &&
+            (isFirstTimeExercise || maxWeightInWorkout > previousMaxWeight)
+          ) {
+            setAchievedPRs((prevPRs) => {
+              const newMap = new Map(prevPRs);
+              newMap.set(exerciseId, {
+                exercise_id: exerciseId,
+                exercise_name: b.exercise.name,
+                new_weight: maxWeightInWorkout,
+                previous_weight: previousMaxWeight,
+              });
+              return newMap;
+            });
+          } else {
+            // No PR - remove from list
+            setAchievedPRs((prevPRs) => {
+              const newMap = new Map(prevPRs);
+              newMap.delete(exerciseId);
+              return newMap;
+            });
+          }
+
+          // Update isPR flags (don't show confetti on value change, only on checkbox)
+          const finalSets = updatedSets.map((s) => ({
+            ...s,
+            isPR:
+              s.done &&
+              s.lbs > 0 &&
+              s.lbs === maxWeightInWorkout &&
+              (isFirstTimeExercise || s.lbs > previousMaxWeight),
+            showConfetti: false, // Don't show confetti when just changing values
+          }));
+
+          return { ...b, sets: finalSets };
+        }
+
+        return { ...b, sets: updatedSets };
       }),
     );
   };
@@ -333,27 +779,6 @@ function InWorkoutContent() {
     }
   };
 
-  const checkForPRs = async (workoutHistoryId: number): Promise<PRData[]> => {
-    if (!user?.id) return [];
-
-    try {
-      const { data, error } = await supabase.rpc("check_workout_prs", {
-        p_profile_id: user.id,
-        p_workout_history_id: workoutHistoryId,
-      });
-
-      if (error) {
-        console.error("Error checking for PRs:", error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error("Error in checkForPRs:", error);
-      return [];
-    }
-  };
-
   const handleFinishWorkout = async () => {
     const allSetsCompleted = exerciseBlocks.every((block) =>
       block.sets.every((set) => set.done),
@@ -386,7 +811,8 @@ function InWorkoutContent() {
       return;
     }
 
-    const prs = await checkForPRs(workoutHistoryId);
+    // Use locally tracked PRs instead of RPC call
+    const prs = Array.from(achievedPRs.values());
 
     const totalReps = exerciseBlocks.reduce(
       (sum, b) => sum + b.sets.reduce((s2, r) => s2 + r.reps, 0),
@@ -599,6 +1025,7 @@ function InWorkoutContent() {
 
                     {/* Table header */}
                     <View style={{ ...fiveColRowStyle, marginTop: 14 }}>
+                      <View style={{ width: 30 }} />
                       <View style={fiveColCellStyle}>
                         <Text
                           style={{
@@ -642,6 +1069,35 @@ function InWorkoutContent() {
                         key={`${block.exercise.exercise_lib_id}-${row.setNumber}`}
                         style={{ ...fiveColRowStyle, marginTop: 18 }}
                       >
+                        {/* Trophy for PR */}
+                        <View
+                          style={{
+                            width: 30,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {row.isPR && (
+                            <View style={{ position: "relative" }}>
+                              <FontAwesome5
+                                name="trophy"
+                                size={18}
+                                color="#FFD700"
+                              />
+                              {row.showConfetti && (
+                                <ConfettiAnimation
+                                  onComplete={() =>
+                                    clearConfetti(
+                                      block.exercise.exercise_lib_id,
+                                      row.setNumber,
+                                    )
+                                  }
+                                />
+                              )}
+                            </View>
+                          )}
+                        </View>
+
                         {/* 1: Sets */}
                         <View style={fiveColCellStyle}>
                           <Text
@@ -655,7 +1111,7 @@ function InWorkoutContent() {
                           </Text>
                         </View>
 
-                        {/* 2: Reps */}
+                        {/* 2: Reps - show previous as placeholder */}
                         <View style={fiveColCellStyle}>
                           <TextInput
                             value={row.reps === 0 ? "" : String(row.reps)}
@@ -668,7 +1124,11 @@ function InWorkoutContent() {
                               )
                             }
                             keyboardType="number-pad"
-                            placeholder="-"
+                            placeholder={
+                              row.previousReps !== null
+                                ? String(row.previousReps)
+                                : "-"
+                            }
                             placeholderTextColor="#999"
                             style={{
                               width: "100%",
@@ -680,7 +1140,7 @@ function InWorkoutContent() {
                           />
                         </View>
 
-                        {/* 3: lbs */}
+                        {/* 3: lbs - show previous as placeholder */}
                         <View style={fiveColCellStyle}>
                           <TextInput
                             value={row.lbs === 0 ? "" : String(row.lbs)}
@@ -693,7 +1153,11 @@ function InWorkoutContent() {
                               )
                             }
                             keyboardType="number-pad"
-                            placeholder="-"
+                            placeholder={
+                              row.previousLbs !== null
+                                ? String(row.previousLbs)
+                                : "-"
+                            }
                             placeholderTextColor="#999"
                             style={{
                               width: "100%",
@@ -791,8 +1255,10 @@ function InWorkoutContent() {
 
 export default function InWorkout() {
   return (
-    <ExerciseLibraryProvider>
-      <InWorkoutContent />
-    </ExerciseLibraryProvider>
+    <ExerciseStatsProvider>
+      <ExerciseLibraryProvider>
+        <InWorkoutContent />
+      </ExerciseLibraryProvider>
+    </ExerciseStatsProvider>
   );
 }

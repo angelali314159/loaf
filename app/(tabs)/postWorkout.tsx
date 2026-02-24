@@ -8,6 +8,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   View,
@@ -69,6 +70,18 @@ export default function PostWorkout() {
         const durationStr =
           hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
 
+        // Parse PRs count from JSON string
+        let prsCount = 0;
+        if (data.prs) {
+          try {
+            const prsArray =
+              typeof data.prs === "string" ? JSON.parse(data.prs) : data.prs;
+            prsCount = Array.isArray(prsArray) ? prsArray.length : 0;
+          } catch {
+            prsCount = 0;
+          }
+        }
+
         // Set stats from workout data
         setStats([
           {
@@ -91,8 +104,8 @@ export default function PostWorkout() {
           },
           {
             label: "PRs",
-            value: `${data.prs || 0} PRs`,
-            visible: true,
+            value: `${prsCount} PRs`,
+            visible: prsCount > 0,
             icon: "award",
           },
         ]);
@@ -338,6 +351,7 @@ export default function PostWorkout() {
     <View className="flex-1 bg-white">
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
       <View
+        pointerEvents="none"
         style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
       >
         <Svg
@@ -347,10 +361,10 @@ export default function PostWorkout() {
           <Defs>
             <RadialGradient
               id="topSemiCircle"
-              cx="50%" //centered horizontally
-              cy="0%" //top edge
-              rx="150%" //horiztonal radius
-              ry="70%" //vertical radius
+              cx="50%"
+              cy="0%"
+              rx="150%"
+              ry="70%"
               gradientUnits="objectBoundingBox"
             >
               <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
@@ -361,9 +375,14 @@ export default function PostWorkout() {
         </Svg>
       </View>
 
-      <View
-        className="flex-1 w-full items-start"
-        style={{ marginTop: height * 0.1, marginHorizontal: width * 0.08 }}
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingTop: height * 0.1,
+          paddingHorizontal: width * 0.08,
+          paddingBottom: 40,
+        }}
+        showsVerticalScrollIndicator={false}
       >
         {/* Description Section */}
         <View style={{ width: width * 0.84 }}>
@@ -594,7 +613,7 @@ export default function PostWorkout() {
             disabled={isPosting}
           />
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }

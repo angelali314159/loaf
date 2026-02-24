@@ -37,8 +37,8 @@ type SetRow = {
   done: boolean;
   isPR: boolean;
   showConfetti: boolean;
-  previousReps: number | null; // For showing placeholder
-  previousLbs: number | null; // For showing placeholder
+  previousReps: number | null;
+  previousLbs: number | null;
 };
 
 type ExerciseBlock = {
@@ -52,6 +52,14 @@ interface PRData {
   new_weight: number;
   previous_weight: number;
 }
+
+type PopupType =
+  | "incomplete"
+  | "emptyValues"
+  | "error"
+  | "updateWorkout"
+  | "saveNewWorkout"
+  | "nameWorkout";
 
 function formatHMS(totalSeconds: number) {
   const h = Math.floor(totalSeconds / 3600);
@@ -204,14 +212,14 @@ function InWorkoutContent() {
   // Track if workout should be saved (toggleable via paw icon)
   const [shouldSaveWorkout, setShouldSaveWorkout] = useState(isSavedWorkout);
 
+  // Track original exercises to detect modifications
+  const [originalExerciseIds, setOriginalExerciseIds] = useState<number[]>([]);
+  const [hasWorkoutBeenModified, setHasWorkoutBeenModified] = useState(false);
+
   // Popup states
   const [showPopup, setShowPopup] = useState(false);
-  const [popupConfig, setPopupConfig] = useState({
-    title: "",
-    message: "",
-    type: "info" as "error" | "success" | "info",
-    onClose: () => {},
-  });
+  const [popupType, setPopupType] = useState<PopupType>("incomplete");
+  const [newWorkoutName, setNewWorkoutName] = useState("");
 
   const selectedExercises = useMemo(
     () => exerciseBlocks.map((b) => b.exercise),
@@ -252,6 +260,7 @@ function InWorkoutContent() {
   const loadWorkoutData = async () => {
     if (workoutId === "new") {
       setExerciseBlocks([]);
+      setOriginalExerciseIds([]);
       setLoading(false);
       return;
     }
@@ -260,6 +269,9 @@ function InWorkoutContent() {
       try {
         const parsed = JSON.parse(passedExercises);
         const exerciseIds = parsed.map((item: any) => item.exercise_lib_id);
+
+        // Store original exercise IDs for comparison
+        setOriginalExerciseIds(exerciseIds);
 
         // Fetch last performance for all exercises
         await fetchLastPerformanceForExercises(exerciseIds);
@@ -337,13 +349,27 @@ function InWorkoutContent() {
       } catch (error) {
         console.error("Error parsing exercises:", error);
         setExerciseBlocks([]);
+        setOriginalExerciseIds([]);
         setLoading(false);
       }
     } else {
       setExerciseBlocks([]);
+      setOriginalExerciseIds([]);
       setLoading(false);
     }
   };
+
+  // Check if workout has been modified whenever exerciseBlocks changes
+  useEffect(() => {
+    if (!isSavedWorkout || originalExerciseIds.length === 0) return;
+
+    const currentIds = exerciseBlocks.map((b) => b.exercise.exercise_lib_id);
+    const isModified =
+      currentIds.length !== originalExerciseIds.length ||
+      !currentIds.every((id, idx) => id === originalExerciseIds[idx]);
+
+    setHasWorkoutBeenModified(isModified);
+  }, [exerciseBlocks, originalExerciseIds, isSavedWorkout]);
 
   const handleAddExercises = () => setShowExerciseList(true);
 
@@ -551,10 +577,10 @@ function InWorkoutContent() {
             const currentMaxInWorkout = currentPR?.new_weight ?? 0;
 
             // It's a PR if:
-            // 1. First time doing this exercise AND weight > 0, OR
+            // 1. First time doing this exercise, OR
             // 2. Weight is greater than previous max AND greater than or equal to current workout max
             const isPR =
-              (isFirstTimeExercise && r.lbs > 0) ||
+              isFirstTimeExercise ||
               (r.lbs > previousMaxWeight && r.lbs >= currentMaxInWorkout);
 
             if (isPR && r.lbs > 0) {
@@ -696,7 +722,6 @@ function InWorkoutContent() {
             });
           }
 
-          // Update isPR flags (don't show confetti on value change, only on checkbox)
           const finalSets = updatedSets.map((s) => ({
             ...s,
             isPR:
@@ -704,7 +729,7 @@ function InWorkoutContent() {
               s.lbs > 0 &&
               s.lbs === maxWeightInWorkout &&
               (isFirstTimeExercise || s.lbs > previousMaxWeight),
-            showConfetti: false, // Don't show confetti when just changing values
+            showConfetti: false,
           }));
 
           return { ...b, sets: finalSets };
@@ -730,7 +755,7 @@ function InWorkoutContent() {
           .insert({
             profile_id: user.id,
             workout_id:
-              workoutId !== "new" && shouldSaveWorkout
+              workoutId !== "new" && isSavedWorkout
                 ? parseInt(workoutId)
                 : null,
             duration_minutes: durationMinutes,
@@ -779,39 +804,164 @@ function InWorkoutContent() {
     }
   };
 
+  const saveNewWorkoutRoutine = async (
+    workoutNameToSave: string,
+  ): Promise<number | null> => {
+    if (!user?.id) return null;
+
+    try {
+      // Create new workout with the provided name
+      const { data: newWorkout, error: workoutError } = await supabase
+        .from("workouts")
+        .insert({
+          profile_id: user.id,
+          workout_name: workoutNameToSave,
+        })
+        .select("workout_id")
+        .single();
+
+      if (workoutError) throw workoutError;
+
+      // Insert workout exercises
+      const exerciseRecords = exerciseBlocks.map((block, index) => ({
+        workout_id: newWorkout.workout_id,
+        exercise_lib_id: block.exercise.exercise_lib_id,
+        exercise_order: index + 1,
+      }));
+
+      const { error: exercisesError } = await supabase
+        .from("workout_exercises")
+        .insert(exerciseRecords);
+
+      if (exercisesError) throw exercisesError;
+
+      return newWorkout.workout_id;
+    } catch (error) {
+      console.error("Error saving new workout routine:", error);
+      return null;
+    }
+  };
+
+  const updateExistingWorkoutRoutine = async (): Promise<boolean> => {
+    if (!user?.id || workoutId === "new") return false;
+
+    try {
+      const numericWorkoutId = parseInt(workoutId);
+
+      // Delete existing workout exercises
+      const { error: deleteError } = await supabase
+        .from("workout_exercises")
+        .delete()
+        .eq("workout_id", numericWorkoutId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new workout exercises
+      const exerciseRecords = exerciseBlocks.map((block, index) => ({
+        workout_id: numericWorkoutId,
+        exercise_lib_id: block.exercise.exercise_lib_id,
+        exercise_order: index + 1,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("workout_exercises")
+        .insert(exerciseRecords);
+
+      if (insertError) throw insertError;
+
+      return true;
+    } catch (error) {
+      console.error("Error updating workout routine:", error);
+      return false;
+    }
+  };
+
   const handleFinishWorkout = async () => {
     const allSetsCompleted = exerciseBlocks.every((block) =>
       block.sets.every((set) => set.done),
     );
 
     if (!allSetsCompleted) {
-      setPopupConfig({
-        title: "Incomplete Workout",
-        message: "Please complete all sets before finishing your workout.",
-        type: "error",
-        onClose: () => setShowPopup(false),
-      });
+      setPopupType("incomplete");
       setShowPopup(true);
       return;
     }
 
+    // Check for sets where reps or lbs were never entered (still null/placeholder "-")
+    // A typed value of 0 is allowed; only block if the field was never touched (value === 0 AND no previous value to fall back on, meaning it shows "-")
+    const hasEmptyValues = exerciseBlocks.some((block) =>
+      block.sets.some(
+        (set) =>
+          set.done &&
+          ((set.reps === 0 && set.previousReps === null) ||
+            (set.lbs === 0 && set.previousLbs === null)),
+      ),
+    );
+
+    if (hasEmptyValues) {
+      setPopupType("emptyValues");
+      setShowPopup(true);
+      return;
+    }
+
+    // Check if we need to show a popup for saving/updating the routine
+    if (isSavedWorkout && hasWorkoutBeenModified && shouldSaveWorkout) {
+      // Existing workout was modified - ask to update or save as new
+      setPopupType("updateWorkout");
+      setShowPopup(true);
+      return;
+    }
+
+    if (!isSavedWorkout && shouldSaveWorkout && exerciseBlocks.length > 0) {
+      // New workout and user wants to save it - ask for name first
+      setNewWorkoutName(displayWorkoutName);
+      setPopupType("nameWorkout");
+      setShowPopup(true);
+      return;
+    }
+
+    // No routine saving needed, just finish and save to history
+    await completeWorkout();
+  };
+
+  const completeWorkout = async (
+    saveAction?: "saveNew" | "update" | "discard",
+    workoutNameToSave?: string,
+  ) => {
     setSaving(true);
 
+    // Handle workout routine saving based on action
+    if (saveAction === "saveNew") {
+      const nameToUse = workoutNameToSave || displayWorkoutName;
+      const newWorkoutId = await saveNewWorkoutRoutine(nameToUse);
+      if (!newWorkoutId) {
+        setPopupType("error");
+        setShowPopup(true);
+        setSaving(false);
+        return;
+      }
+    } else if (saveAction === "update") {
+      const success = await updateExistingWorkoutRoutine();
+      if (!success) {
+        setPopupType("error");
+        setShowPopup(true);
+        setSaving(false);
+        return;
+      }
+    }
+    // "discard" means don't save/update routine, but still save to history
+
+    // Always save workout to history
     const workoutHistoryId = await saveWorkoutToHistory();
 
     if (!workoutHistoryId) {
-      setPopupConfig({
-        title: "Error",
-        message: "Failed to save workout. Please try again.",
-        type: "error",
-        onClose: () => setShowPopup(false),
-      });
+      setPopupType("error");
       setShowPopup(true);
       setSaving(false);
       return;
     }
 
-    // Use locally tracked PRs instead of RPC call
+    // Use locally tracked PRs
     const prs = Array.from(achievedPRs.values());
 
     const totalReps = exerciseBlocks.reduce(
@@ -821,7 +971,7 @@ function InWorkoutContent() {
 
     const workoutData = {
       workoutHistoryId: workoutHistoryId.toString(),
-      workoutName: displayWorkoutName,
+      workoutName: workoutNameToSave || displayWorkoutName,
       duration: seconds,
       exercises: exerciseBlocks.length,
       sets: totalSets,
@@ -838,6 +988,130 @@ function InWorkoutContent() {
         workoutData: JSON.stringify(workoutData),
       },
     });
+  };
+
+  const handlePopupAction = async (action: string) => {
+    setShowPopup(false);
+
+    if (popupType === "updateWorkout") {
+      if (action === "update") {
+        await completeWorkout("update");
+      } else if (action === "saveNew") {
+        // When saving as new from an existing workout, ask for name
+        setNewWorkoutName(displayWorkoutName);
+        setPopupType("nameWorkout");
+        setShowPopup(true);
+      }
+    } else if (popupType === "nameWorkout") {
+      if (action === "save") {
+        const nameToSave = newWorkoutName.trim() || displayWorkoutName;
+        await completeWorkout("saveNew", nameToSave);
+      } else if (action === "discard") {
+        await completeWorkout("discard");
+      }
+    } else if (popupType === "saveNewWorkout") {
+      if (action === "save") {
+        await completeWorkout("saveNew");
+      } else if (action === "discard") {
+        await completeWorkout("discard");
+      }
+    }
+  };
+
+  const renderPopup = () => {
+    if (popupType === "incomplete") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Incomplete Workout"
+          message="Please complete all sets before finishing your workout."
+          type="error"
+          onClose={() => setShowPopup(false)}
+        />
+      );
+    }
+
+    if (popupType === "emptyValues") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Missing Values"
+          message="Please enter reps and weight for all completed sets. A value of 0 is allowed."
+          type="error"
+          onClose={() => setShowPopup(false)}
+        />
+      );
+    }
+
+    if (popupType === "error") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Error"
+          message="Failed to save workout. Please try again."
+          type="error"
+          onClose={() => setShowPopup(false)}
+        />
+      );
+    }
+
+    if (popupType === "updateWorkout") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Update Workout?"
+          message="Do you want to update this routine with the new changes?"
+          type="info"
+          confirmText="Update"
+          onClose={() => handlePopupAction("update")}
+          secondaryAction={{
+            text: "Save as new",
+            onPress: () => handlePopupAction("saveNew"),
+          }}
+        />
+      );
+    }
+
+    if (popupType === "nameWorkout") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Name Your Workout"
+          message="Enter a name for this workout routine:"
+          type="info"
+          confirmText="Save"
+          onClose={() => handlePopupAction("save")}
+          secondaryAction={{
+            text: "Don't Save",
+            onPress: () => handlePopupAction("discard"),
+          }}
+          textInput={{
+            value: newWorkoutName,
+            onChangeText: setNewWorkoutName,
+            placeholder: "e.g., Push Day, Leg Day...",
+          }}
+        />
+      );
+    }
+
+    if (popupType === "saveNewWorkout") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Save Workout?"
+          message="Do you want to save this workout for future use?"
+          type="info"
+          confirmText="Save workout"
+          onClose={() => handlePopupAction("save")}
+          secondaryAction={{
+            text: "Discard",
+            onPress: () => handlePopupAction("discard"),
+          }}
+        />
+      );
+    }
+
+    return null;
   };
 
   const finishButtonIsDark = exerciseBlocks.length > 0;
@@ -918,11 +1192,10 @@ function InWorkoutContent() {
                     ? require("../../assets/images/paw-filled.png")
                     : require("../../assets/images/cat_paw.png")
                 }
-                style={{
-                  width: 22,
-                  height: 22,
-                  tintColor: shouldSaveWorkout ? undefined : "#B9B9B9",
-                }}
+                style={[
+                  { width: 22, height: 22 },
+                  !shouldSaveWorkout && { tintColor: "#B9B9B9" },
+                ]}
                 resizeMode="contain"
               />
             </TouchableOpacity>
@@ -1242,13 +1515,7 @@ function InWorkoutContent() {
         selectedExercises={selectedExercises}
       />
 
-      <PopupMessage
-        visible={showPopup}
-        title={popupConfig.title}
-        message={popupConfig.message}
-        type={popupConfig.type}
-        onClose={popupConfig.onClose}
-      />
+      {renderPopup()}
     </View>
   );
 }

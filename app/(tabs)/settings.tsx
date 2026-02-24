@@ -1,41 +1,32 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { Alert, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
+import PopupMessage from "../../components/PopupMessage";
 import { Button, H3 } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function Settings() {
   const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [showError, setShowError] = useState(false);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Logout",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsLoggingOut(true);
-              await signOut();
-              router.replace("/(tabs)/welcome");
-            } catch (error) {
-              console.error("Error logging out:", error);
-              Alert.alert("Error", "Failed to logout. Please try again.");
-            } finally {
-              setIsLoggingOut(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true },
-    );
+  const handleLogout = () => {
+    setShowConfirm(true);
+  };
+
+  const confirmLogout = async () => {
+    setShowConfirm(false);
+    try {
+      setIsLoggingOut(true);
+      await signOut();
+      router.replace("/(tabs)/welcome");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      setShowError(true);
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -57,6 +48,27 @@ export default function Settings() {
           />
         </View>
       </ScrollView>
+
+      <PopupMessage
+        visible={showConfirm}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        type="info"
+        confirmText="Logout"
+        onClose={confirmLogout}
+        secondaryAction={{
+          text: "Cancel",
+          onPress: () => setShowConfirm(false),
+        }}
+      />
+
+      <PopupMessage
+        visible={showError}
+        title="Error"
+        message="Failed to logout. Please try again."
+        type="error"
+        onClose={() => setShowError(false)}
+      />
     </View>
   );
 }

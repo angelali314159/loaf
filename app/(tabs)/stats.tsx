@@ -88,13 +88,6 @@ export default function Stats() {
           />
 
           <Button
-            title="Create Workout"
-            onPress={() => navigateToPage("createWorkout")}
-            color="blue"
-            fontColor="white"
-          />
-
-          <Button
             title="In Workout"
             onPress={() => navigateToPage("inWorkout")}
             color="yellow"

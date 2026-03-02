@@ -1,46 +1,63 @@
-import React from 'react';
-import { Dimensions, Modal, TouchableOpacity, View } from 'react-native';
-import { Button, H2, P } from './typography';
+import React from "react";
+import {
+  Dimensions,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Button, H2, P } from "./typography";
 
 interface PopupMessageProps {
   visible: boolean;
   title?: string;
   message: string;
-  type?: 'error' | 'success' | 'info';
+  type?: "error" | "success" | "info";
   onClose: () => void;
   confirmText?: string;
+  secondaryAction?: {
+    text: string;
+    onPress: () => void;
+  };
+  textInput?: {
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder?: string;
+  };
 }
 
 export default function PopupMessage({
   visible,
   title,
   message,
-  type = 'info',
+  type = "info",
   onClose,
-  confirmText = 'OK'
+  confirmText = "OK",
+  secondaryAction,
+  textInput,
 }: PopupMessageProps) {
   const getTypeColors = () => {
     switch (type) {
-      case 'error':
+      case "error":
         return {
-          bg: 'bg-red-50',
-          border: 'border-red-200',
-          titleColor: 'text-red-800',
-          messageColor: 'text-red-600'
+          bg: "bg-red-50",
+          border: "border-red-200",
+          titleColor: "text-red-800",
+          messageColor: "text-red-600",
         };
-      case 'success':
+      case "success":
         return {
-          bg: 'bg-green-50',
-          border: 'border-green-200',
-          titleColor: 'text-green-800',
-          messageColor: 'text-green-600'
+          bg: "bg-green-50",
+          border: "border-green-200",
+          titleColor: "text-green-800",
+          messageColor: "text-green-600",
         };
       default:
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          titleColor: 'text-blue-800',
-          messageColor: 'text-blue-600'
+          bg: "bg-blue-50",
+          border: "border-blue-200",
+          titleColor: "text-blue-800",
+          messageColor: "text-blue-600",
         };
     }
   };
@@ -54,38 +71,62 @@ export default function PopupMessage({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
+      <TouchableOpacity
         className="flex-1 justify-center items-center bg-black/50"
         activeOpacity={1}
         onPress={onClose}
       >
-        <TouchableOpacity 
-          activeOpacity={1}
-          onPress={() => {}} // Prevent closing when touching the popup content
-        >
-          <View 
+        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+          <View
             className={`${colors.bg} ${colors.border} border-2 rounded-2xl mx-6 p-6 shadow-lg`}
-            style={{ 
-              minWidth: Dimensions.get('window').width * 0.7,
-              maxWidth: Dimensions.get('window').width * 0.9
+            style={{
+              minWidth: Dimensions.get("window").width * 0.7,
+              maxWidth: Dimensions.get("window").width * 0.9,
             }}
           >
             {title && (
-              <H2 baseSize={16} className={`${colors.titleColor} text-center mb-3 font-semibold`}>
+              <H2
+                baseSize={16}
+                className={`${colors.titleColor} text-center mb-3 font-semibold`}
+              >
                 {title}
               </H2>
             )}
-            
-            <P className={`${colors.messageColor} text-center mb-6`}>
+
+            <P className={`${colors.messageColor} text-center mb-4`}>
               {message}
             </P>
-            
-            <Button
-              title={confirmText}
-              onPress={onClose}
-              color={type === 'error' ? 'yellow' : 'blue'}
-              fontColor={type === 'error' ? 'blue' : 'white'}
-            />
+
+            {textInput && (
+              <TextInput
+                value={textInput.value}
+                onChangeText={textInput.onChangeText}
+                placeholder={textInput.placeholder || "Enter text..."}
+                placeholderTextColor="#999"
+                className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
+                style={{ backgroundColor: "#fff" }}
+                autoFocus
+              />
+            )}
+
+            <View className={secondaryAction ? "flex-row gap-3" : ""}>
+              {secondaryAction && (
+                <View className="flex-1">
+                  <Button
+                    title={secondaryAction.text}
+                    onPress={secondaryAction.onPress}
+                  />
+                </View>
+              )}
+              <View className={secondaryAction ? "flex-1" : ""}>
+                <Button
+                  title={confirmText}
+                  onPress={onClose}
+                  color={type === "error" ? "yellow" : "blue"}
+                  fontColor={type === "error" ? "blue" : "white"}
+                />
+              </View>
+            </View>
           </View>
         </TouchableOpacity>
       </TouchableOpacity>

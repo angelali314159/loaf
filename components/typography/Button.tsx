@@ -34,7 +34,7 @@ interface ButtonProps {
   /** background color key: 'blue' -> #2D3541, 'yellow' -> #fcde8c */
   color?: "blue" | "yellow" | "black" | "beige";
   /** font color key: 'blue' | 'yellow' | 'white' */
-  fontColor?: "blue" | "yellow" | "white";
+  fontColor?: "blue" | "yellow" | "white" | "black";
   /** border color key: 'blue' | 'yellow' | 'white' */
   borderColor?: "blue" | "yellow" | "white";
   style?: ViewStyle;

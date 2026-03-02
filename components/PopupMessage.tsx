@@ -1,7 +1,9 @@
 import React from "react";
 import {
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   TextInput,
   TouchableOpacity,
   View,
@@ -71,65 +73,70 @@ export default function PopupMessage({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        className="flex-1 justify-center items-center bg-black/50"
-        activeOpacity={1}
-        onPress={onClose}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View
-            className={`${colors.bg} ${colors.border} border-2 rounded-2xl mx-6 p-6 shadow-lg`}
-            style={{
-              minWidth: Dimensions.get("window").width * 0.7,
-              maxWidth: Dimensions.get("window").width * 0.9,
-            }}
-          >
-            {title && (
-              <H2
-                baseSize={16}
-                className={`${colors.titleColor} text-center mb-3 font-semibold`}
-              >
-                {title}
-              </H2>
-            )}
+        <TouchableOpacity
+          className="flex-1 justify-center items-center bg-black/50"
+          activeOpacity={1}
+          onPress={onClose}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View
+              className={`${colors.bg} ${colors.border} border-2 rounded-2xl mx-6 p-6 shadow-lg`}
+              style={{
+                minWidth: Dimensions.get("window").width * 0.7,
+                maxWidth: Dimensions.get("window").width * 0.9,
+              }}
+            >
+              {title && (
+                <H2
+                  baseSize={16}
+                  className={`${colors.titleColor} text-center mb-3 font-semibold`}
+                >
+                  {title}
+                </H2>
+              )}
 
-            <P className={`${colors.messageColor} text-center mb-4`}>
-              {message}
-            </P>
+              <P className={`${colors.messageColor} text-center mb-4`}>
+                {message}
+              </P>
 
-            {textInput && (
-              <TextInput
-                value={textInput.value}
-                onChangeText={textInput.onChangeText}
-                placeholder={textInput.placeholder || "Enter text..."}
-                placeholderTextColor="#999"
-                className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
-                style={{ backgroundColor: "#fff" }}
-                autoFocus
-              />
-            )}
+              {textInput && (
+                <TextInput
+                  value={textInput.value}
+                  onChangeText={textInput.onChangeText}
+                  placeholder={textInput.placeholder || "Enter text..."}
+                  placeholderTextColor="#999"
+                  className="border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base"
+                  style={{ backgroundColor: "#fff" }}
+                  autoFocus
+                />
+              )}
 
-            <View className={secondaryAction ? "flex-row gap-3" : ""}>
-              {secondaryAction && (
-                <View className="flex-1">
+              <View className={secondaryAction ? "flex-row gap-3" : ""}>
+                {secondaryAction && (
+                  <View className="flex-1">
+                    <Button
+                      title={secondaryAction.text}
+                      onPress={secondaryAction.onPress}
+                    />
+                  </View>
+                )}
+                <View className={secondaryAction ? "flex-1" : ""}>
                   <Button
-                    title={secondaryAction.text}
-                    onPress={secondaryAction.onPress}
+                    title={confirmText}
+                    onPress={onClose}
+                    color={type === "error" ? "yellow" : "blue"}
+                    fontColor={type === "error" ? "blue" : "white"}
                   />
                 </View>
-              )}
-              <View className={secondaryAction ? "flex-1" : ""}>
-                <Button
-                  title={confirmText}
-                  onPress={onClose}
-                  color={type === "error" ? "yellow" : "blue"}
-                  fontColor={type === "error" ? "blue" : "white"}
-                />
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

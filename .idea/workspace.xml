@@ -5,12 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="971b2ce2-bafd-444b-adef-40c6a841f55f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/assets/images/back-arrow.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/images/cat-waving.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(tabs)/createWorkout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/createWorkout.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/(tabs)/exercisePreview.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/exercisePreview.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/allExercises.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/allExercises.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/inWorkout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/inWorkout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/postWorkout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/postWorkout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(tabs)/workoutComplete.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(tabs)/workoutComplete.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/components/ExerciseList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/ExerciseList.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/PopupMessage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/PopupMessage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contexts/ExerciseLibraryContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/contexts/ExerciseLibraryContext.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +51,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;ts.external.directory.path&quot;: &quot;/Users/charlotte/Desktop/LoafGitHub/node_modules/typescript/lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
@@ -99,10 +102,25 @@
       <workItem from="1770326799850" duration="1200000" />
       <workItem from="1770693382085" duration="2625000" />
       <workItem from="1770696383863" duration="8922000" />
+      <workItem from="1772489286296" duration="100000" />
+      <workItem from="1772489398357" duration="489000" />
+      <workItem from="1772489902357" duration="2227000" />
+      <workItem from="1772492155256" duration="2814000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

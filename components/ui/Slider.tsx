@@ -39,20 +39,11 @@ return (
             <Image
               className=""
               source={require("../../assets/images/paw_yellow.svg")}
-              // resizeMode="contain"
             />
-            // <Icon
-            //   name="heartbeat"
-            //   type="font-awesome"
-            //   size={20}
-            //   reverse
-            //   containerStyle={{ bottom: 20, right: 20 }}
-            //   color={color()}
-            // />
           ),
         }}
       />
-      <Text style={{ paddingTop: 20, textAlign: "right"}}>{value} mins</Text>
+      <Text style={{ textAlign: "right"}}>{value} mins</Text>
     </View>
   </>
 );
@@ -60,13 +51,12 @@ return (
 
 const styles = StyleSheet.create({
 contentView: {
-  padding: 20,
   width: '100%',
-  justifyContent: 'center',
+  // justifyContent: 'center',
   alignItems: 'stretch',
 },
 verticalContent: {
-  padding: 20,
+  // padding: 20,
   flex: 1,
   flexDirection: 'row',
   height: 500,

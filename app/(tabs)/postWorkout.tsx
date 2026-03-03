@@ -9,6 +9,8 @@ import {
   Alert,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -380,7 +382,10 @@ export default function PostWorkout() {
   const width = Dimensions.get("screen").width;
 
   return (
-    <View className="flex-1 bg-white">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 bg-white"
+    >
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
       <View
         pointerEvents="none"
@@ -415,6 +420,7 @@ export default function PostWorkout() {
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         {/* Description Section */}
         <View style={{ width: width * 0.84 }}>
@@ -646,6 +652,6 @@ export default function PostWorkout() {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

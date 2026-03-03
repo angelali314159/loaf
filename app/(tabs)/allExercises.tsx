@@ -1,7 +1,7 @@
 import { AntDesign, Fontisto } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ImageBackground, ScrollView, TouchableOpacity, View } from "react-native";
+import { ImageBackground, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, View } from "react-native";
 import { H2, P } from '../../components/typography';
 
 interface Exercise {
@@ -120,7 +120,10 @@ export default function AllExercises() {
   }
 
   return (
-    <View className="flex-1 bg-white mb-16">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 bg-white mb-16"
+    >
       {/* Header */}
       <TouchableOpacity 
         onPress={() => router.back()}
@@ -134,7 +137,11 @@ export default function AllExercises() {
       </View>
 
       {/* Exercise List */}
-      <ScrollView className="flex-1 mx-4" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1 mx-4" 
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+      >
         <View className="flex-row flex-wrap">
           {exerciseData.map((item, index) => (
             <View key={`${item.name}-${index}`} className="w-full mb-4">
@@ -197,6 +204,6 @@ export default function AllExercises() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }

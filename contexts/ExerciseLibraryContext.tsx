@@ -79,25 +79,12 @@ export interface ExerciseLibraryItem {
   category: string | null;
   equipment: string | null;
   video_link: string | null;
-  muscles: {
-    muscle_id: string;
-    name: string;
+  muscles?: {
+    muscle_id: number;
     is_primary: boolean;
+    name: string;
   }[];
-  image_name?: string | null;
-  image_url?: string | null;
 }
-
-export interface GroupedExercise {
-  exercise_lib_id: number;
-  name: string;
-  category: string | null;
-  equipment: string | null;
-  video_link: string | null;
-  image_name: string | null;
-}
-
-export type ExercisesByMuscle = Record<string, GroupedExercise[]>;
 
 interface ExerciseLibraryContextType {
   exercises: ExerciseLibraryItem[];
@@ -105,20 +92,12 @@ interface ExerciseLibraryContextType {
   equipmentList: string[];
   muscleList: string[];
   loading: boolean;
-  error: string | null;
-  getExerciseByName: (name: string) => ExerciseLibraryItem | undefined;
-  refreshExercises: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
-const ExerciseLibraryContext = createContext<
-  ExerciseLibraryContextType | undefined
->(undefined);
+const ExerciseLibraryContext = createContext<ExerciseLibraryContextType | undefined>(undefined);
 
-export function ExerciseLibraryProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ExerciseLibraryProvider({ children }: { children: React.ReactNode }) {
   const [exercises, setExercises] = useState<ExerciseLibraryItem[]>([]);
   const [exercisesByMuscle, setExercisesByMuscle] = useState<ExercisesByMuscle>(
     {},
@@ -126,9 +105,9 @@ export function ExerciseLibraryProvider({
   const [equipmentList, setEquipmentList] = useState<string[]>([]);
   const [muscleList, setMuscleList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchExercises = async () => {
+    setLoading(true);
     try {
       setLoading(true);
       setError(null);
@@ -141,36 +120,24 @@ export function ExerciseLibraryProvider({
           equipment,
           video_link,
           exercise_muscles (
+            muscle_id,
             is_primary,
             muscles (
-              muscle_id,
               name
             )
-          ),
-          image_name
-        `),
-        // Fetch exercises grouped by primary muscle
-        supabase.rpc("get_exercises_grouped_by_primary_muscle"),
-      ]);
+          )
+        `)
+        .order('name');
 
-      if (exerciseResult.error) throw exerciseResult.error;
-      if (groupedResult.error) throw groupedResult.error;
+      if (error) throw error;
 
-      // Transform data to flatten muscle information
-      const transformedData: ExerciseLibraryItem[] = (
-        exerciseResult.data || []
-      ).map((exercise) => ({
-        exercise_lib_id: exercise.exercise_lib_id,
-        name: exercise.name,
-        category: exercise.category,
-        equipment: exercise.equipment,
-        video_link: exercise.video_link,
-        muscles: (exercise.exercise_muscles || []).map((em: any) => ({
-          muscle_id: em.muscles.muscle_id,
-          name: em.muscles.name,
+      const formatted: ExerciseLibraryItem[] = (data || []).map((ex: any) => ({
+        ...ex,
+        muscles: ex.exercise_muscles?.map((em: any) => ({
+          muscle_id: em.muscle_id,
           is_primary: em.is_primary,
-        })),
-        image_name: exercise.image_name,
+          name: em.muscles?.name || 'Unknown'
+        })) || []
       }));
 
       const uniqueEquipment = Array.from(
@@ -190,10 +157,20 @@ export function ExerciseLibraryProvider({
       setEquipmentList(uniqueEquipment);
       setMuscleList(uniqueMuscles);
     } catch (err) {
-      console.error("Error fetching exercise library:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch exercises",
-      );
+      console.error('Error fetching exercise library:', err);
+      // Fallback: try fetching without muscles if the join fails
+      try {
+        const { data, error } = await supabase
+          .from('exercise_library')
+          .select('*')
+          .order('name');
+        
+        if (!error && data) {
+           setExercises(data as ExerciseLibraryItem[]);
+        }
+      } catch (retryErr) {
+        console.error('Retry failed:', retryErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -202,14 +179,6 @@ export function ExerciseLibraryProvider({
   useEffect(() => {
     fetchExercises();
   }, []);
-
-  const getExerciseByName = (name: string) => {
-    return exercises.find((ex) => ex.name.toLowerCase() === name.toLowerCase());
-  };
-
-  const refreshExercises = async () => {
-    await fetchExercises();
-  };
 
   return (
     <ExerciseLibraryContext.Provider
@@ -232,9 +201,7 @@ export function ExerciseLibraryProvider({
 export function useExerciseLibrary() {
   const context = useContext(ExerciseLibraryContext);
   if (context === undefined) {
-    throw new Error(
-      "useExerciseLibrary must be used within an ExerciseLibraryProvider",
-    );
+    throw new Error('useExerciseLibrary must be used within an ExerciseLibraryProvider');
   }
   return context;
 }

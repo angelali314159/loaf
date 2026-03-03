@@ -125,11 +125,11 @@ export default function WorkoutComplete() {
       <View className="px-4 py-20 flex-1">
         <View className="flex-1">
           <H2>
-            <b>Congratulations {user?.username}, you finished your workout!</b>
+            Congratulations {user?.username}, you finished your workout!
           </H2>
           <View className="gap-5 flex-1 mt-4">
             <H2>
-              <b>Let's review your workout progress</b>
+              Let's review your workout progress
             </H2>
             <ScrollView
               className="flex-1"
@@ -148,7 +148,7 @@ export default function WorkoutComplete() {
                 >
                   <P style={{ color: "#565656" }}>
                     Workout length:
-                    <b>
+
                       {workoutHour > 0
                         ? ` ${workoutHour} hr${workoutHour > 1 ? "s" : ""}${workoutMinute > 0 ? ", " : ""}`
                         : ""}
@@ -157,7 +157,7 @@ export default function WorkoutComplete() {
                         : workoutHour === 0
                           ? " < 1 min"
                           : ""}
-                    </b>
+
                   </P>
                 </Animated.View>
               </View>
@@ -172,7 +172,7 @@ export default function WorkoutComplete() {
                   style={{ transform: [{ translateY: slideAnim }] }}
                 >
                   <P style={{ color: "#565656" }}>
-                    Total weight lifted: <b>{totalWeightLifted}</b> lbs
+                    Total weight lifted: {totalWeightLifted} lbs
                   </P>
                 </Animated.View>
               </View>
@@ -187,7 +187,7 @@ export default function WorkoutComplete() {
                   style={{ transform: [{ translateY: slideAnim }] }}
                 >
                   <P style={{ color: "#565656" }}>
-                    Total sets: <b>{totalSets}</b>
+                    Total sets: {totalSets}
                   </P>
                 </Animated.View>
               </View>
@@ -204,7 +204,7 @@ export default function WorkoutComplete() {
                     className="gap-5"
                   >
                     <P style={{ color: "#565656" }}>
-                      Reached <b>{numNewPRs}</b> new personal record
+                      Reached {numNewPRs} new personal record
                       {numNewPRs > 1 ? "s" : ""}:
                     </P>
                     {prs.map((pr, index) => (

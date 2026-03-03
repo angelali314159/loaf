@@ -41,6 +41,7 @@
  *        exercises,              // Full list with all muscle info
  *        exercisesByMuscle,      // Exercises grouped by primary muscle
  *        equipmentList,          // List of all unique equipment values
+ *        muscleList,             // List of all unique muscles
  *        loading,
  *        error,
  *        getExerciseByName,      // Helper to find exercise by name
@@ -55,6 +56,9 @@
  *
  *      // Example: Use equipment list for filtering
  *      const equipmentOptions = equipmentList; // ['Barbell', 'Dumbbell', ...]
+ *
+ *      // Example: Use muscle list for filtering
+ *      const muscleOptions = muscleList; // ['Chest', 'Back', 'Legs', ...]
  *    }
  *    ```
  *
@@ -63,6 +67,7 @@
  * - `exercises`: Full exercise details including all muscles (primary & secondary)
  * - `exercisesByMuscle`: Record<string, GroupedExercise[]> - exercises keyed by primary muscle name
  * - `equipmentList`: string[] - sorted list of unique equipment values (null entries excluded)
+ * - `muscleList`: string[] - sorted list of all unique muscle names
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -98,6 +103,7 @@ interface ExerciseLibraryContextType {
   exercises: ExerciseLibraryItem[];
   exercisesByMuscle: ExercisesByMuscle;
   equipmentList: string[];
+  muscleList: string[];
   loading: boolean;
   error: string | null;
   getExerciseByName: (name: string) => ExerciseLibraryItem | undefined;
@@ -118,6 +124,7 @@ export function ExerciseLibraryProvider({
     {},
   );
   const [equipmentList, setEquipmentList] = useState<string[]>([]);
+  const [muscleList, setMuscleList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -126,9 +133,7 @@ export function ExerciseLibraryProvider({
       setLoading(true);
       setError(null);
 
-      // Fetch both data sources in parallel
       const [exerciseResult, groupedResult] = await Promise.all([
-        // Fetch exercise library with muscle information
         supabase.from("exercise_library").select(`
           exercise_lib_id,
           name,
@@ -168,7 +173,6 @@ export function ExerciseLibraryProvider({
         image_name: exercise.image_name,
       }));
 
-      // Extract unique equipment values
       const uniqueEquipment = Array.from(
         new Set(
           transformedData
@@ -177,9 +181,14 @@ export function ExerciseLibraryProvider({
         ),
       ).sort();
 
+      const uniqueMuscles = Array.from(
+        new Set(transformedData.flatMap((ex) => ex.muscles.map((m) => m.name))),
+      ).sort();
+
       setExercises(transformedData);
       setExercisesByMuscle(groupedResult.data || {});
       setEquipmentList(uniqueEquipment);
+      setMuscleList(uniqueMuscles);
     } catch (err) {
       console.error("Error fetching exercise library:", err);
       setError(
@@ -208,6 +217,7 @@ export function ExerciseLibraryProvider({
         exercises,
         exercisesByMuscle,
         equipmentList,
+        muscleList,
         loading,
         error,
         getExerciseByName,

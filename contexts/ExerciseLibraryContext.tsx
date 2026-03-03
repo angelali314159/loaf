@@ -40,6 +40,7 @@
  *      const {
  *        exercises,              // Full list with all muscle info
  *        exercisesByMuscle,      // Exercises grouped by primary muscle
+ *        equipmentList,          // List of all unique equipment values
  *        loading,
  *        error,
  *        getExerciseByName,      // Helper to find exercise by name
@@ -51,6 +52,9 @@
  *
  *      // Example: Find a specific exercise
  *      const benchPress = getExerciseByName('Bench Press');
+ *
+ *      // Example: Use equipment list for filtering
+ *      const equipmentOptions = equipmentList; // ['Barbell', 'Dumbbell', ...]
  *    }
  *    ```
  *
@@ -58,6 +62,7 @@
  *
  * - `exercises`: Full exercise details including all muscles (primary & secondary)
  * - `exercisesByMuscle`: Record<string, GroupedExercise[]> - exercises keyed by primary muscle name
+ * - `equipmentList`: string[] - sorted list of unique equipment values (null entries excluded)
  */
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -92,6 +97,7 @@ export type ExercisesByMuscle = Record<string, GroupedExercise[]>;
 interface ExerciseLibraryContextType {
   exercises: ExerciseLibraryItem[];
   exercisesByMuscle: ExercisesByMuscle;
+  equipmentList: string[];
   loading: boolean;
   error: string | null;
   getExerciseByName: (name: string) => ExerciseLibraryItem | undefined;
@@ -111,6 +117,7 @@ export function ExerciseLibraryProvider({
   const [exercisesByMuscle, setExercisesByMuscle] = useState<ExercisesByMuscle>(
     {},
   );
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,8 +168,18 @@ export function ExerciseLibraryProvider({
         image_name: exercise.image_name,
       }));
 
+      // Extract unique equipment values
+      const uniqueEquipment = Array.from(
+        new Set(
+          transformedData
+            .map((ex) => ex.equipment)
+            .filter((eq): eq is string => eq !== null),
+        ),
+      ).sort();
+
       setExercises(transformedData);
       setExercisesByMuscle(groupedResult.data || {});
+      setEquipmentList(uniqueEquipment);
     } catch (err) {
       console.error("Error fetching exercise library:", err);
       setError(
@@ -190,6 +207,7 @@ export function ExerciseLibraryProvider({
       value={{
         exercises,
         exercisesByMuscle,
+        equipmentList,
         loading,
         error,
         getExerciseByName,

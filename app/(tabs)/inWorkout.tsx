@@ -5,6 +5,8 @@ import {
   Animated,
   Dimensions,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -1127,7 +1129,10 @@ function InWorkoutContent() {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      className="flex-1 bg-white"
+    >
       {/* SEMICIRCLE GRADIENT BACKGROUND */}
       <View
         pointerEvents="none"
@@ -1158,6 +1163,7 @@ function InWorkoutContent() {
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
       >
         <View className="px-6 pt-16">
           {/* Header */}
@@ -1167,7 +1173,7 @@ function InWorkoutContent() {
                 onPress={() => router.back()}
                 className="pr-3 py-2"
               >
-                <Feather name="arrow-left" size={26} color="#32393d" />
+                <Feather name="chevron-left" size={26} color="#32393d" />
               </TouchableOpacity>
 
               <View style={{ flex: 1 }}>
@@ -1516,7 +1522,7 @@ function InWorkoutContent() {
       />
 
       {renderPopup()}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

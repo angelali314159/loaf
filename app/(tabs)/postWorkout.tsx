@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { decode } from "base64-arraybuffer";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -216,58 +217,89 @@ export default function PostWorkout() {
     if (!user?.id) return null;
 
     try {
-      let blob: Blob;
-      try {
-        blob = await uriToBlob(uri);
-      } catch (err) {
-        console.error(
-          "uploadImageToSupabase - Could not convert file to blob:",
-          err,
-        );
-        Alert.alert("Error", `Could not convert file to blob: ${err}`);
-        return null;
+      // Read file as base64
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status}`);
       }
 
-      if (blob.size === 0) {
-        console.error("uploadImageToSupabase - Empty file detected");
-        Alert.alert("Error", "Image file is empty. Please try again.");
-        return null;
-      }
+      const blob = await response.blob();
+      const reader = new FileReader();
 
-      // Double-check file size (should already be under limit from compressImage)
-      if (blob.size > MAX_FILE_SIZE) {
-        console.error("uploadImageToSupabase - File too large:", blob.size);
-        Alert.alert(
-          "File too large",
-          `Image is ${Math.round(blob.size / 1024)} KB, must be under 50 KB`,
-        );
-        return null;
-      }
+      return new Promise((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            if (blob.size === 0) {
+              console.error("uploadImageToSupabase - Empty file detected");
+              Alert.alert("Error", "Image file is empty. Please try again.");
+              resolve(null);
+              return;
+            }
 
-      // Build path and content type
-      const filename = uri.split("/").pop() || `${Date.now()}.jpg`;
-      const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
-      const contentType = ext === "png" ? "image/png" : "image/jpeg";
-      const path = `${user.id}/${Date.now()}-${filename}`;
+            if (blob.size > MAX_FILE_SIZE) {
+              console.error(
+                "uploadImageToSupabase - File too large:",
+                blob.size,
+              );
+              Alert.alert(
+                "File too large",
+                `Image is ${Math.round(blob.size / 1024)} KB, must be under 50 KB`,
+              );
+              resolve(null);
+              return;
+            }
 
-      // Upload to Supabase storage
-      const { data, error: uploadError } = await supabase.storage
-        .from("post-images")
-        .upload(path, blob, { contentType, upsert: false });
+            const base64String = (reader.result as string).split(",")[1];
+            const filename = uri.split("/").pop() || `${Date.now()}.jpg`;
+            const ext = filename.split(".").pop()?.toLowerCase() || "jpg";
+            const contentType = ext === "png" ? "image/png" : "image/jpeg";
+            const path = `${user.id}/${Date.now()}-${filename}`;
 
-      if (uploadError) {
-        console.error("uploadImageToSupabase - Upload error:", uploadError);
-        throw uploadError;
-      }
+            // Upload using base64-arraybuffer decode for native compatibility
+            const { data, error: uploadError } = await supabase.storage
+              .from("post-images")
+              .upload(path, decode(base64String), {
+                contentType,
+                upsert: false,
+              });
 
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("post-images").getPublicUrl(path);
+            if (uploadError) {
+              console.error(
+                "uploadImageToSupabase - Upload error:",
+                uploadError,
+              );
+              throw uploadError;
+            }
 
-      return publicUrl;
+            // Get public URL
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("post-images").getPublicUrl(path);
+
+            resolve(publicUrl);
+          } catch (error) {
+            console.error(
+              "uploadImageToSupabase - Error uploading image:",
+              error,
+            );
+            Alert.alert(
+              "Upload failed",
+              "Failed to upload image. Please try again.",
+            );
+            resolve(null);
+          }
+        };
+
+        reader.onerror = () => {
+          console.error("uploadImageToSupabase - FileReader error");
+          Alert.alert("Error", "Failed to read image file.");
+          reject(null);
+        };
+
+        reader.readAsDataURL(blob);
+      });
     } catch (error) {
-      console.error("uploadImageToSupabase - Error uploading image:", error);
+      console.error("uploadImageToSupabase - Error:", error);
       Alert.alert("Upload failed", "Failed to upload image. Please try again.");
       return null;
     }

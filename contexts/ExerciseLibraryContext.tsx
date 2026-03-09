@@ -1,5 +1,77 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../utils/supabase';
+/**
+ * ExerciseLibraryContext
+ * ======================
+ *
+ * This context provides access to the exercise library data throughout the app.
+ *
+ * ## Usage
+ *
+ * 1. Wrap your page with `ExerciseLibraryProvider`:
+ *
+ *    ```tsx
+ *    import { ExerciseLibraryProvider } from '../contexts/ExerciseLibraryContext';
+ *
+ *    function App() {
+ *      return (
+ *        <ExerciseLibraryProvider>
+ *          <YourComponents />
+ *        </ExerciseLibraryProvider>
+ *      );
+ *    }
+ *    ```
+ * 
+ * ex. :
+ * export default function InWorkout() {
+   return (
+     <ExerciseStatsProvider>
+       <ExerciseLibraryProvider>
+         <InWorkoutContent />
+       </ExerciseLibraryProvider>
+     </ExerciseStatsProvider>
+   );
+ }
+ *
+ * 2. Access exercise data in any child component:
+ *
+ *    ```tsx
+ *    import { useExerciseLibrary } from '../contexts/ExerciseLibraryContext';
+ *
+ *    function MyComponent() {
+ *      const {
+ *        exercises,              // Full list with all muscle info
+ *        exercisesByMuscle,      // Exercises grouped by primary muscle
+ *        equipmentList,          // List of all unique equipment values
+ *        muscleList,             // List of all unique muscles
+ *        loading,
+ *        error,
+ *        getExerciseByName,      // Helper to find exercise by name
+ *        refreshExercises        // Refetch all data
+ *      } = useExerciseLibrary();
+ *
+ *      // Example: Get all chest exercises
+ *      const chestExercises = exercisesByMuscle['Chest'] || [];
+ *
+ *      // Example: Find a specific exercise
+ *      const benchPress = getExerciseByName('Bench Press');
+ *
+ *      // Example: Use equipment list for filtering
+ *      const equipmentOptions = equipmentList; // ['Barbell', 'Dumbbell', ...]
+ *
+ *      // Example: Use muscle list for filtering
+ *      const muscleOptions = muscleList; // ['Chest', 'Back', 'Legs', ...]
+ *    }
+ *    ```
+ *
+ * ## Data Structures
+ *
+ * - `exercises`: Full exercise details including all muscles (primary & secondary)
+ * - `exercisesByMuscle`: Record<string, GroupedExercise[]> - exercises keyed by primary muscle name
+ * - `equipmentList`: string[] - sorted list of unique equipment values (null entries excluded)
+ * - `muscleList`: string[] - sorted list of all unique muscle names
+ */
+
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../utils/supabase";
 
 export interface ExerciseLibraryItem {
   exercise_lib_id: number;
@@ -7,84 +79,121 @@ export interface ExerciseLibraryItem {
   category: string | null;
   equipment: string | null;
   video_link: string | null;
-  muscles?: {
-    muscle_id: number;
-    is_primary: boolean;
+  muscles: {
+    muscle_id: string;
     name: string;
+    is_primary: boolean;
   }[];
+  image_name?: string | null;
+  image_url?: string | null;
 }
+
+export interface GroupedExercise {
+  exercise_lib_id: number;
+  name: string;
+  category: string | null;
+  equipment: string | null;
+  video_link: string | null;
+  image_name: string | null;
+}
+
+export type ExercisesByMuscle = Record<string, GroupedExercise[]>;
 
 interface ExerciseLibraryContextType {
   exercises: ExerciseLibraryItem[];
-  exercisesByMuscle: Record<string, ExerciseLibraryItem[]>;
+  exercisesByMuscle: ExercisesByMuscle;
+  equipmentList: string[];
+  muscleList: string[];
   loading: boolean;
-  refresh: () => Promise<void>;
+  error: string | null;
+  getExerciseByName: (name: string) => ExerciseLibraryItem | undefined;
+  refreshExercises: () => Promise<void>;
 }
 
-const ExerciseLibraryContext = createContext<ExerciseLibraryContextType | undefined>(undefined);
+const ExerciseLibraryContext = createContext<
+  ExerciseLibraryContextType | undefined
+>(undefined);
 
-export function ExerciseLibraryProvider({ children }: { children: React.ReactNode }) {
+export function ExerciseLibraryProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [exercises, setExercises] = useState<ExerciseLibraryItem[]>([]);
-  const [exercisesByMuscle, setExercisesByMuscle] = useState<Record<string, ExerciseLibraryItem[]>>({});
+  const [exercisesByMuscle, setExercisesByMuscle] = useState<ExercisesByMuscle>(
+    {},
+  );
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
+  const [muscleList, setMuscleList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchExercises = async () => {
-    setLoading(true);
     try {
-      // Attempt to fetch with muscles. If this fails due to schema mismatch, 
-      // we might need to adjust the query.
-      const { data, error } = await supabase
-        .from('exercise_library')
-        .select(`
-          *,
+      setLoading(true);
+      setError(null);
+
+      const [exerciseResult, groupedResult] = await Promise.all([
+        supabase.from("exercise_library").select(`
+          exercise_lib_id,
+          name,
+          category,
+          equipment,
+          video_link,
           exercise_muscles (
-            muscle_id,
             is_primary,
             muscles (
+              muscle_id,
               name
             )
-          )
-        `)
-        .order('name');
+          ),
+          image_name
+        `),
+        // Fetch exercises grouped by primary muscle
+        supabase.rpc("get_exercises_grouped_by_primary_muscle"),
+      ]);
 
-      if (error) throw error;
+      if (exerciseResult.error) throw exerciseResult.error;
+      if (groupedResult.error) throw groupedResult.error;
 
-      const formatted: ExerciseLibraryItem[] = (data || []).map((ex: any) => ({
-        ...ex,
-        muscles: ex.exercise_muscles?.map((em: any) => ({
-          muscle_id: em.muscle_id,
+      // Transform data to flatten muscle information
+      const transformedData: ExerciseLibraryItem[] = (
+        exerciseResult.data || []
+      ).map((exercise) => ({
+        exercise_lib_id: exercise.exercise_lib_id,
+        name: exercise.name,
+        category: exercise.category,
+        equipment: exercise.equipment,
+        video_link: exercise.video_link,
+        muscles: (exercise.exercise_muscles || []).map((em: any) => ({
+          muscle_id: em.muscles.muscle_id,
+          name: em.muscles.name,
           is_primary: em.is_primary,
-          name: em.muscles?.name || 'Unknown'
-        })) || []
+        })),
+        image_name: exercise.image_name,
       }));
 
-      setExercises(formatted);
+      const uniqueEquipment = Array.from(
+        new Set(
+          transformedData
+            .map((ex) => ex.equipment)
+            .filter((eq): eq is string => eq !== null),
+        ),
+      ).sort();
 
-      const byMuscle: Record<string, ExerciseLibraryItem[]> = {};
-      formatted.forEach(ex => {
-        ex.muscles?.forEach(m => {
-          const mName = m.name;
-          if (!byMuscle[mName]) byMuscle[mName] = [];
-          byMuscle[mName].push(ex);
-        });
-      });
-      setExercisesByMuscle(byMuscle);
+      const uniqueMuscles = Array.from(
+        new Set(transformedData.flatMap((ex) => ex.muscles.map((m) => m.name))),
+      ).sort();
 
+      setExercises(transformedData);
+      setExercisesByMuscle(groupedResult.data || {});
+      setEquipmentList(uniqueEquipment);
+      setMuscleList(uniqueMuscles);
     } catch (err) {
-      console.error('Error fetching exercise library:', err);
-      // Fallback: try fetching without muscles if the join fails
-      try {
-        const { data, error } = await supabase
-          .from('exercise_library')
-          .select('*')
-          .order('name');
-        
-        if (!error && data) {
-           setExercises(data as ExerciseLibraryItem[]);
-        }
-      } catch (retryErr) {
-        console.error('Retry failed:', retryErr);
-      }
+      console.error("Error fetching exercise library:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch exercises",
+      );
     } finally {
       setLoading(false);
     }
@@ -94,8 +203,27 @@ export function ExerciseLibraryProvider({ children }: { children: React.ReactNod
     fetchExercises();
   }, []);
 
+  const getExerciseByName = (name: string) => {
+    return exercises.find((ex) => ex.name.toLowerCase() === name.toLowerCase());
+  };
+
+  const refreshExercises = async () => {
+    await fetchExercises();
+  };
+
   return (
-    <ExerciseLibraryContext.Provider value={{ exercises, exercisesByMuscle, loading, refresh: fetchExercises }}>
+    <ExerciseLibraryContext.Provider
+      value={{
+        exercises,
+        exercisesByMuscle,
+        equipmentList,
+        muscleList,
+        loading,
+        error,
+        getExerciseByName,
+        refreshExercises,
+      }}
+    >
       {children}
     </ExerciseLibraryContext.Provider>
   );
@@ -104,7 +232,9 @@ export function ExerciseLibraryProvider({ children }: { children: React.ReactNod
 export function useExerciseLibrary() {
   const context = useContext(ExerciseLibraryContext);
   if (context === undefined) {
-    throw new Error('useExerciseLibrary must be used within an ExerciseLibraryProvider');
+    throw new Error(
+      "useExerciseLibrary must be used within an ExerciseLibraryProvider",
+    );
   }
   return context;
 }

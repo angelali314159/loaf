@@ -105,10 +105,6 @@ export default function WorkoutList() {
     });
   };
 
-  const handlePreviewWorkout = (workoutPlan: WorkoutPlan) => {
-    setSelectedWorkout(workoutPlan);
-  };
-
   const handleClosePreview = () => {
     setSelectedWorkout(null);
   };
@@ -195,7 +191,7 @@ export default function WorkoutList() {
                 workoutPlans.map((item) => (
                   <TouchableOpacity
                     key={item.workout_id}
-                    onPress={() => handlePreviewWorkout(item)}
+                    onPress={() => navigateToWorkout(item)}
                     className="mt-2 mb-2 pb-4 border-b border-[#32393d]/20"
                   >
                     <View className="flex-row justify-between items-start">

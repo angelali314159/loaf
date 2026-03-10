@@ -113,9 +113,12 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      // TO-DO: Implement streak calculation based on workout_history
-      // For now, using mock data
-      setStreak(7);
+      const { data, error } = await supabase.rpc("get_workout_streak", {
+        p_profile_id: user.id,
+      });
+
+      if (error) throw error;
+      setStreak(data || 0);
     } catch (error) {
       console.error("Error fetching streak:", error);
     }
@@ -354,7 +357,7 @@ export default function Profile() {
           <View className="flex-1 items-center">
             <H4 baseSize={9}>Streak</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
-              10 weeks
+              {streak} week{streak !== 1 ? "s" : ""}
             </H4>
           </View>
           <View className="w-px bg-[#B1B0B0] mx-2" />

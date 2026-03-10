@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -45,6 +46,7 @@ export default function Profile() {
   const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
+  const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
@@ -53,8 +55,18 @@ export default function Profile() {
       fetchStreak();
       fetchFriendsCount();
       fetchFriendPosts();
+      fetchPendingRequests();
     }
   }, [user]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user?.id) {
+        fetchFriendsCount();
+        fetchPendingRequests();
+      }
+    }, [user?.id]),
+  );
 
   useEffect(() => {
     const loadImageUrls = async () => {
@@ -101,9 +113,12 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      // TO-DO: Implement streak calculation based on workout_history
-      // For now, using mock data
-      setStreak(7);
+      const { data, error } = await supabase.rpc("get_workout_streak", {
+        p_profile_id: user.id,
+      });
+
+      if (error) throw error;
+      setStreak(data || 0);
     } catch (error) {
       console.error("Error fetching streak:", error);
     }
@@ -113,13 +128,20 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      const { count, error } = await supabase
+      // Count friendships where user is either user_id or friend_id
+      const { data, error } = await supabase
         .from("friends")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id);
+        .select("user_id, friend_id")
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
       if (error) throw error;
-      setFriendsCount(count || 0);
+
+      // Count unique friendships (using min_id and max_id to avoid duplicates)
+      const uniqueFriends = new Set(
+        data?.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id)) ||
+          [],
+      );
+      setFriendsCount(uniqueFriends.size);
     } catch (error) {
       console.error("Error fetching friends count:", error);
     }
@@ -194,6 +216,23 @@ export default function Profile() {
       console.error("Error fetching friend posts:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingRequests = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("friend_requests")
+        .select("friend_request_id")
+        .eq("receiver_id", user.id)
+        .limit(1);
+
+      if (error) throw error;
+      setHasPendingRequests((data?.length || 0) > 0);
+    } catch (error) {
+      console.error("Error fetching pending requests:", error);
     }
   };
 
@@ -318,7 +357,7 @@ export default function Profile() {
           <View className="flex-1 items-center">
             <H4 baseSize={9}>Streak</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
-              10 weeks
+              {streak} week{streak !== 1 ? "s" : ""}
             </H4>
           </View>
           <View className="w-px bg-[#B1B0B0] mx-2" />
@@ -337,7 +376,12 @@ export default function Profile() {
             className="flex-1 items-center"
             onPress={() => router.push("/(tabs)/friendSearch")}
           >
-            <H4 baseSize={9}>Friends</H4>
+            <View className="flex-row items-center justify-center gap-1">
+              <H4 baseSize={9}>Friends</H4>
+              {hasPendingRequests && (
+                <View className="w-2 h-2 rounded-full bg-[#FCDE8C]" />
+              )}
+            </View>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
               {friendsCount}
             </H4>

@@ -38,33 +38,6 @@ export default function PopupMessage({
   secondaryAction,
   textInput,
 }: PopupMessageProps) {
-  const getTypeColors = () => {
-    switch (type) {
-      case "error":
-        return {
-          bg: "bg-red-50",
-          border: "border-red-200",
-          titleColor: "text-red-800",
-          messageColor: "text-red-600",
-        };
-      case "success":
-        return {
-          bg: "bg-green-50",
-          border: "border-green-200",
-          titleColor: "text-green-800",
-          messageColor: "text-green-600",
-        };
-      default:
-        return {
-          bg: "bg-blue-50",
-          border: "border-blue-200",
-          titleColor: "text-blue-800",
-          messageColor: "text-blue-600",
-        };
-    }
-  };
-
-  const colors = getTypeColors();
 
   return (
     <Modal
@@ -84,22 +57,24 @@ export default function PopupMessage({
         >
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View
-              className={`${colors.bg} ${colors.border} border-2 rounded-2xl mx-6 p-6 shadow-lg`}
+              className={`bg-white rounded-[30px] mx-6 p-6 shadow-lg`}
               style={{
                 minWidth: Dimensions.get("window").width * 0.7,
                 maxWidth: Dimensions.get("window").width * 0.9,
               }}
             >
+              {/*
               {title && (
                 <H2
                   baseSize={16}
-                  className={`${colors.titleColor} text-center mb-3 font-semibold`}
+                  className={`black text-center mb-3 font-bold`}
                 >
                   {title}
                 </H2>
               )}
+              The figma doesn't have titles so this is commented out*/}
 
-              <P className={`${colors.messageColor} text-center mb-4`}>
+              <P className={`black text-center my-4`}>
                 {message}
               </P>
 
@@ -121,6 +96,8 @@ export default function PopupMessage({
                     <Button
                       title={secondaryAction.text}
                       onPress={secondaryAction.onPress}
+                      color={"black"}
+                      fontColor={"white"}
                     />
                   </View>
                 )}
@@ -128,8 +105,8 @@ export default function PopupMessage({
                   <Button
                     title={confirmText}
                     onPress={onClose}
-                    color={type === "error" ? "yellow" : "blue"}
-                    fontColor={type === "error" ? "blue" : "white"}
+                    color={"yellow"}
+                    fontColor={"black"}
                   />
                 </View>
               </View>

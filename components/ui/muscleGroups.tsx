@@ -1,7 +1,20 @@
 import React from "react";
-import { Dimensions, Pressable, View } from "react-native";
+import { Dimensions, Image, Pressable, View } from "react-native";
 import { useExerciseLibrary } from "../../contexts/ExerciseLibraryContext";
 import { P } from "../typography";
+
+const muscleImages = {
+  Chest: require("../../assets/images/Cats/Chest_Cat.png"),
+  Back: require("../../assets/images/Cats/Back_Cat.png"),
+  Shoulders: require("../../assets/images/Cats/Shoulders_Cat.png"),
+  Biceps: require("../../assets/images/Cats/Biceps_Cat.png"),
+  Triceps: require("../../assets/images/Cats/Triceps_Cat.png"),
+  Quads: require("../../assets/images/Cats/Quads_Cat.png"),
+  Hamstrings: require("../../assets/images/Cats/Hamstrings_Cat.png"),
+  Glutes: require("../../assets/images/Cats/Glutes_Cat.png"),
+  Abs: require("../../assets/images/Cats/Abs_Cat.png"),
+  Calves: require("../../assets/images/Cats/Calves_Cat.png"),
+};
 
 interface MuscleGroupsProps {
   selectedGroups: string[];
@@ -15,9 +28,8 @@ export default function MuscleGroups({
   const { muscleList, loading } = useExerciseLibrary();
 
   const { width, height } = Dimensions.get("window");
-  let boxWidth = (width - 100) / 3; // 20 padding on each side and 20 gap between boxes
+  let boxWidth = (width - 100) / 3;
   if (boxWidth > 150) {
-    // Set a max width for larger screens
     boxWidth = 150;
   }
 
@@ -47,6 +59,12 @@ export default function MuscleGroups({
             }
           }}
         >
+          {muscleImages[muscleName] && (
+            <Image
+              source={muscleImages[muscleName]}
+              style={{ width: 40, height: 40 }}
+            />
+          )}
           <P>{muscleName}</P>
         </Pressable>
       ))}

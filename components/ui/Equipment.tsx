@@ -3,6 +3,14 @@ import React from "react";
 import { Dimensions, Image, Pressable, View } from "react-native";
 import { P } from "../typography";
 
+const equipmentImages = {
+  Barbell: require("../../assets/images/Equipment/Barbell.png"),
+  Dumbbell: require("../../assets/images/Equipment/Dumbbell.png"),
+  Cable: require("../../assets/images/Equipment/Cable.png"),
+  Machine: require("../../assets/images/Equipment/Machine.png"),
+  None: require("../../assets/images/Equipment/None.png"),
+};
+
 interface EquipmentProps {
   selectedEquipments: string[];
   setSelectedEquipments: (groups: string[]) => void;
@@ -49,12 +57,14 @@ export default function Equipment({
             }
           }}
         >
-          <Image className="" source={equipment.image} resizeMode="contain" />
-          <P
-            className={`w-[${boxWidth}] h-[${boxWidth}] flex-wrap text-center`}
-          >
-            {equipment}
-          </P>
+          {equipmentImages[equipment] && (
+            <Image
+              source={equipmentImages[equipment]}
+              style={{ width: 40, height: 40 }}
+              resizeMode="contain"
+            />
+          )}
+          <P className="text-center">{equipment}</P>
         </Pressable>
       ))}
     </View>

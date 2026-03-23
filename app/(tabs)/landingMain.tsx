@@ -222,12 +222,14 @@ export default function LandingMain() {
             Explore Exercise Categories
           </H1>
 
+          <Pressable onPress={() => router.push('/exploreCategories')}>
           <Text
-            style={{ color: "#FAB906", fontSize: 10}}
+            style={{ color: "#FAB906", fontSize: 10 }}
             className="font-bold tracking-wider"
           >
             View More
           </Text>
+        </Pressable>
 
           
         </View>

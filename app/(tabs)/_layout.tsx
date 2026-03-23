@@ -149,6 +149,12 @@ export default function TabLayout() {
           href: null, // This hides the tab
         }}
       />
+       <Tabs.Screen
+        name="exploreCategories"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
     </Tabs>
   );
 }

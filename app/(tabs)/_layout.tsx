@@ -150,6 +150,12 @@ export default function TabLayout() {
           tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
         }}
       />
+       <Tabs.Screen
+        name="exploreCategories"
+        options={{
+          href: null, // This hides the tab
+        }}
+      />
     </Tabs>
   );
 }

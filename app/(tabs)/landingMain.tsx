@@ -5,6 +5,7 @@ import { Dimensions, Image, Pressable, ScrollView, Text, TouchableOpacity, View 
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { H1, H2, P } from '../../components/typography';
 
+
 interface Exercise {
   name: string;
   sets: number;
@@ -20,7 +21,7 @@ interface WorkoutPlan {
 
 const generateWeek = () => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // normalize time
+  today.setHours(0, 0, 0, 0); 
 
   const dayOfWeek = today.getDay();
   const sunday = new Date(today);
@@ -96,7 +97,10 @@ export default function LandingMain() {
       />
 
       <View className="flex-1 bg-white">
-        <ScrollView className="flex-1 mx-4">
+        <ScrollView className="flex-1 mx-4"
+         contentContainerStyle={{ paddingBottom: 140 }}
+         showsVerticalScrollIndicator={false}
+        >
 
           {/* Semicircle Gradient Background */}
           <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
@@ -218,12 +222,14 @@ export default function LandingMain() {
             Explore Exercise Categories
           </H1>
 
+          <Pressable onPress={() => router.push('/exploreCategories')}>
           <Text
-            style={{ color: "#FAB906", fontSize: 10}}
+            style={{ color: "#FAB906", fontSize: 10 }}
             className="font-bold tracking-wider"
           >
             View More
           </Text>
+        </Pressable>
 
           
         </View>

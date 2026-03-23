@@ -1,75 +1,76 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Image } from 'react-native';
-import { Slider, Text, Icon } from '@rneui/themed';
+import { Slider, Text } from "@rneui/themed";
+import React, { useState } from "react";
+import { Image, StyleSheet, View } from "react-native";
 
-type SlidersComponentProps = {};
-
-const Sliders: React.FunctionComponent<SlidersComponentProps> = () => {
-const [value, setValue] = useState(0);
-const [vertValue, setVertValue] = useState(0);
-
-const interpolate = (start: number, end: number) => {
-  let k = (value - 0) / 10; // 0 =>min  && 10 => MAX
-  return Math.ceil((1 - k) * start + k * end) % 256;
+type SlidersComponentProps = {
+  onValueChange?: (value: number) => void;
 };
 
-const color = () => {
-  let r = interpolate(255, 0);
-  let g = interpolate(0, 255);
-  let b = interpolate(0, 0);
-  return `rgb(${r},${g},${b})`;
-};
+const Sliders: React.FunctionComponent<SlidersComponentProps> = ({
+  onValueChange,
+}) => {
+  const [value, setValue] = useState(0);
 
-return (
-  <>
-    <View style={[styles.contentView]}>
-      <Slider
-        value={value}
-        onValueChange={setValue}
-        maximumValue={120}
-        minimumValue={0}
-        step={1}
-        allowTouchTrack
-        minimumTrackTintColor="#FCDE8C"
-        maximumTrackTintColor="#e0e0e0c8"
-        trackStyle={{ height: 5 }}
-        thumbStyle={{ height: 20, width: 20, backgroundColor: 'transparent' }}
-        thumbProps={{
-          children: (
-            <Image
-              className=""
-              source={require("../../assets/images/paw_yellow.svg")}
-            />
-          ),
-        }}
-      />
-      <Text style={{ textAlign: "right"}}>{value} mins</Text>
-    </View>
-  </>
-);
+  const handleValueChange = (newValue: number) => {
+    setValue(newValue);
+    if (onValueChange) {
+      onValueChange(newValue);
+    }
+  };
+
+  const interpolate = (start: number, end: number) => {
+    let k = (value - 0) / 10;
+    return Math.ceil((1 - k) * start + k * end) % 256;
+  };
+
+  return (
+    <>
+      <View style={[styles.contentView]}>
+        <Slider
+          value={value}
+          onValueChange={handleValueChange}
+          maximumValue={120}
+          minimumValue={0}
+          step={1}
+          allowTouchTrack
+          minimumTrackTintColor="#FCDE8C"
+          maximumTrackTintColor="#e0e0e0c8"
+          trackStyle={{ height: 5 }}
+          thumbStyle={{ height: 20, width: 20, backgroundColor: "transparent" }}
+          thumbProps={{
+            children: (
+              <Image
+                className=""
+                source={require("../../assets/images/paw_yellow.svg")}
+              />
+            ),
+          }}
+        />
+        <Text style={{ textAlign: "right" }}>{value} mins</Text>
+      </View>
+    </>
+  );
 };
 
 const styles = StyleSheet.create({
-contentView: {
-  width: '100%',
-  // justifyContent: 'center',
-  alignItems: 'stretch',
-},
-verticalContent: {
-  // padding: 20,
-  flex: 1,
-  flexDirection: 'row',
-  height: 500,
-  justifyContent: 'center',
-  alignItems: 'stretch',
-},
-subHeader: {
-  backgroundColor : "#2089dc",
-  color : "white",
-  textAlign : "center",
-  paddingVertical : 5,
-  marginBottom : 10
-}
+  contentView: {
+    width: "100%",
+    alignItems: "stretch",
+  },
+  verticalContent: {
+    flex: 1,
+    flexDirection: "row",
+    height: 500,
+    justifyContent: "center",
+    alignItems: "stretch",
+  },
+  subHeader: {
+    backgroundColor: "#2089dc",
+    color: "white",
+    textAlign: "center",
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
 });
 
 export default Sliders;

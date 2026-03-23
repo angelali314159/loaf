@@ -147,6 +147,7 @@ export default function TabLayout() {
         name="generatedPreview"
         options={{
           href: null, // This hides the tab
+          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
         }}
       />
     </Tabs>

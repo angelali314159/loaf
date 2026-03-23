@@ -12,6 +12,7 @@ export default function GenerateWorkout() {
   const router = useRouter();
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
+  const [sliderValue, setSliderValue] = useState(0);
   const { height } = Dimensions.get("window");
   const arrow = require("../../assets/images/back-arrow.png");
 
@@ -31,7 +32,7 @@ export default function GenerateWorkout() {
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>
                 Specify workout duration
               </H2>
-              <Sliders />
+              <Sliders onValueChange={setSliderValue} />
             </View>
             <View className="gap-2">
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>
@@ -58,6 +59,7 @@ export default function GenerateWorkout() {
             onPress={() => {
               setSelectedGroups([]);
               setSelectedEquipments([]);
+              setSliderValue(0);
             }}
             color="black"
             fontColor="white"
@@ -72,7 +74,17 @@ export default function GenerateWorkout() {
                 selectedGroups,
                 "Selected Equipments: ",
                 selectedEquipments,
+                "Duration: ",
+                sliderValue,
               );
+              router.push({
+                pathname: "/generatedPreview",
+                params: {
+                  duration: sliderValue,
+                  selectedGroups: selectedGroups,
+                  selectedEquipments: selectedEquipments,
+                },
+              });
             }}
             color="yellow"
             fontColor="black"

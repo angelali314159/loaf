@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { H4, P } from "../../components/typography";
+import LeaguePopup from "../../components/ui/leaguePopup";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -47,6 +48,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
+  const [isLeaguePopupVisible, setIsLeaguePopupVisible] = useState(false);
   const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
@@ -276,7 +278,8 @@ export default function Profile() {
           ? {
               ...post,
               isLiked: !post.isLiked,
-              likes: post.isLiked ? post.likes - 1 : post.likes + 1,
+              like_count:
+                post.isLiked ? post.like_count - 1 : post.like_count + 1,
             }
           : post,
       ),
@@ -363,12 +366,15 @@ export default function Profile() {
           <View className="w-px bg-[#B1B0B0] mx-2" />
 
           {/* League */}
-          <View className="flex-1 items-center">
+          <TouchableOpacity
+            className="flex-1 items-center"
+            onPress={() => setIsLeaguePopupVisible(true)}
+          >
             <H4 baseSize={9}>League</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
               Biscuits
             </H4>
-          </View>
+          </TouchableOpacity>
           <View className="w-px bg-[#B1B0B0] mx-2" />
 
           {/* Friends */}
@@ -492,6 +498,11 @@ export default function Profile() {
           )}
         </View>
       </ScrollView>
+
+      <LeaguePopup
+        visible={isLeaguePopupVisible}
+        onClose={() => setIsLeaguePopupVisible(false)}
+      />
     </View>
   );
 }

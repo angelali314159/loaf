@@ -3,7 +3,7 @@
 
 import TabBarBackground from "@/components/TabBarBackground";
 import { Tabs } from "expo-router";
-import { Dumbbell, House, TrendingUp, UserRound } from "lucide-react-native";
+import { Dumbbell, House, UserRound } from "lucide-react-native";
 import React from "react";
 import { Dimensions, Platform } from "react-native";
 import TabBarItem from "../../components/TabBarItem";
@@ -49,13 +49,6 @@ export default function TabLayout() {
         options={{
           title: "Workouts",
           tabBarIcon: ({ color }) => <Dumbbell color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="stats"
-        options={{
-          title: "help",
-          tabBarIcon: ({ color }) => <TrendingUp color={color} />,
         }}
       />
       <Tabs.Screen

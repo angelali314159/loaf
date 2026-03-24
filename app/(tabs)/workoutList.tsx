@@ -87,6 +87,7 @@ export default function WorkoutList() {
     router.push({
       pathname: "/(tabs)/inWorkout",
       params: {
+        sessionId: Date.now().toString(),
         workoutId: workoutPlan.workout_id.toString(),
         workoutName: workoutPlan.workout_name,
         exercises: JSON.stringify(workoutPlan.exercises),
@@ -99,6 +100,7 @@ export default function WorkoutList() {
     router.push({
       pathname: "/(tabs)/inWorkout",
       params: {
+        sessionId: Date.now().toString(),
         workoutId: "new",
         isSavedWorkout: "false",
       },

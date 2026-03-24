@@ -1,9 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import Octicons from "@expo/vector-icons/Octicons";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
-  Animated,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -21,7 +20,9 @@ import {
   useExerciseLibrary,
 } from "../../contexts/ExerciseLibraryContext";
 import { BottomFade, TopFade } from "../FadeEdges";
-
+import { H1 } from "../typography";
+import Equipment from "./Equipment";
+import MuscleGroups from "./MuscleGroups";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
@@ -47,129 +48,26 @@ interface ExerciseListProps {
   onSaveEdits?: () => void;
 }
 
-// ─── Emoji lookup maps (cosmetic only — options still come from the DB) ────────
-
-const EQUIPMENT_EMOJI: Record<string, string> = {
-  dumbbell: "🏋️",
-  barbell: "🏋️‍♂️",
-  kettlebell: "🔔",
-  machine: "⚙️",
-  cable: "🔗",
-  plates: "🪨",
-  bands: "〰️",
-  mat: "🟦",
-  "body weight": "🧍",
-  bodyweight: "🧍",
-  none: "✕",
-};
-
-const MUSCLE_EMOJI: Record<string, string> = {
-  chest: "🫁",
-  back: "🔙",
-  shoulders: "💪",
-  biceps: "💪",
-  triceps: "💪",
-  forearms: "🦾",
-  core: "🔥",
-  glutes: "🍑",
-  quads: "🦵",
-  hamstrings: "🦵",
-  calves: "🦿",
-  traps: "🏔️",
-  lats: "🪽",
-};
-
-// ─── Derived filter option type ───────────────────────────────────────────────
-
-interface FilterOption {
-  label: string; // Display name (DB casing)
-  value: string; // Normalized lowercase key used for Set membership
-  emoji: string;
-}
-
-// ─── Animated Filter Tile ─────────────────────────────────────────────────────
-
-interface AnimatedFilterTileProps {
-  label: string;
-  emoji: string;
-  active: boolean;
-  onPress: () => void;
-}
-
-function AnimatedFilterTile({
-  label,
-  emoji,
-  active,
-  onPress,
-}: AnimatedFilterTileProps) {
-  const anim = useRef(new Animated.Value(active ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: active ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false, // color interpolation requires JS driver
-    }).start();
-  }, [active]);
-
-  const backgroundColor = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#FFFFFF", "#F7D57A"],
-  });
-  const borderColor = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["#E5E7EB", "#F7D57A"],
-  });
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.75}
-      className="w-[30%]"
-    >
-      {/* Animated colors + non-standard borderWidth must stay inline */}
-      <Animated.View
-        className="aspect-square rounded-2xl items-center justify-center p-2"
-        style={{ backgroundColor, borderColor, borderWidth: 1.5 }}
-      >
-        <Text className="text-3xl mb-1">{emoji}</Text>
-        <Text
-          className={`text-xs text-center ${
-            active ? "text-[#0B1626] font-bold" : "text-[#4B5563] font-medium"
-          }`}
-          numberOfLines={2}
-        >
-          {label}
-        </Text>
-      </Animated.View>
-    </TouchableOpacity>
-  );
-}
-
 // ─── Filter Panel ─────────────────────────────────────────────────────────────
 
 interface FilterPanelProps {
-  equipmentOptions: FilterOption[];
-  muscleOptions: FilterOption[];
-  selectedEquipment: Set<string>;
-  selectedMuscles: Set<string>;
-  onToggleEquipment: (v: string) => void;
-  onToggleMuscle: (v: string) => void;
+  selectedEquipment: string[];
+  selectedMuscles: string[];
+  onSetEquipment: (groups: string[]) => void;
+  onSetMuscles: (groups: string[]) => void;
   onBack: () => void;
   onClear: () => void;
 }
 
 function FilterPanel({
-  equipmentOptions,
-  muscleOptions,
   selectedEquipment,
   selectedMuscles,
-  onToggleEquipment,
-  onToggleMuscle,
+  onSetEquipment,
+  onSetMuscles,
   onBack,
   onClear,
 }: FilterPanelProps) {
-  const activeCount = selectedEquipment.size + selectedMuscles.size;
+  const activeCount = selectedEquipment.length + selectedMuscles.length;
 
   return (
     <View className="flex-1">
@@ -186,56 +84,25 @@ function FilterPanel({
       </View>
 
       <ScrollView
-        className="flex-1 px-6"
+        className="flex-1 px-2"
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Equipment section — only rendered when data has loaded */}
-        {equipmentOptions.length > 0 && (
-          <>
-            <Text className="text-[#0B1626] text-2xl font-bold mb-4">
-              Equipment
-            </Text>
-            <View className="flex-row flex-wrap gap-2.5">
-              {equipmentOptions.map((opt) => (
-                <AnimatedFilterTile
-                  key={opt.value}
-                  label={opt.label}
-                  emoji={opt.emoji}
-                  active={selectedEquipment.has(opt.value)}
-                  onPress={() => onToggleEquipment(opt.value)}
-                />
-              ))}
-            </View>
-          </>
-        )}
+        <H1 baseSize={17} className="mb-4 ml-2">
+          Equipment
+        </H1>
+        <Equipment
+          selectedEquipments={selectedEquipment}
+          setSelectedEquipments={onSetEquipment}
+        />
 
-        {/* Muscles section — only rendered when data has loaded */}
-        {muscleOptions.length > 0 && (
-          <>
-            <Text className="text-[#0B1626] text-2xl font-bold mt-6 mb-4">
-              Target Muscles
-            </Text>
-            <View className="flex-row flex-wrap gap-2.5">
-              {muscleOptions.map((opt) => (
-                <AnimatedFilterTile
-                  key={opt.value}
-                  label={opt.label}
-                  emoji={opt.emoji}
-                  active={selectedMuscles.has(opt.value)}
-                  onPress={() => onToggleMuscle(opt.value)}
-                />
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Show a placeholder while context is still fetching */}
-        {equipmentOptions.length === 0 && muscleOptions.length === 0 && (
-          <View className="py-10 items-center">
-            <Text className="text-[#6B7280]">Loading filters…</Text>
-          </View>
-        )}
+        <H1 baseSize={17} className="mb-4 mt-6 ml-2">
+          Target Muscles
+        </H1>
+        <MuscleGroups
+          selectedGroups={selectedMuscles}
+          setSelectedGroups={onSetMuscles}
+        />
       </ScrollView>
     </View>
   );
@@ -323,62 +190,14 @@ function ExerciseListContent({
   onSaveEdits,
 }: ExerciseListProps) {
   // Pull everything from context — no direct Supabase calls needed here
-  const { exercises, exercisesByMuscle, loading } = useExerciseLibrary();
+  const { exercises, loading } = useExerciseLibrary();
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [showFilters, setShowFilters] = React.useState(false);
-  const [selectedEquipment, setSelectedEquipment] = React.useState<Set<string>>(
-    new Set(),
+  const [selectedEquipment, setSelectedEquipment] = React.useState<string[]>(
+    [],
   );
-  const [selectedMuscles, setSelectedMuscles] = React.useState<Set<string>>(
-    new Set(),
-  );
-
-  // ── Derive equipment options from real DB data ──────────────────────────────
-  const equipmentOptions = useMemo<FilterOption[]>(() => {
-    const seen = new Set<string>();
-    const opts: FilterOption[] = [];
-    let hasNone = false;
-
-    for (const ex of exercises) {
-      if (!ex.equipment) {
-        hasNone = true;
-      } else {
-        const value = ex.equipment.trim().toLowerCase();
-        if (value && !seen.has(value)) {
-          seen.add(value);
-          opts.push({
-            label: ex.equipment.trim(),
-            value,
-            emoji: EQUIPMENT_EMOJI[value] ?? "🏋️",
-          });
-        }
-      }
-    }
-
-    // Sort alphabetically, then append None at the end
-    opts.sort((a, b) => a.label.localeCompare(b.label));
-    if (hasNone) {
-      opts.push({ label: "None", value: "none", emoji: "✕" });
-    }
-
-    return opts;
-  }, [exercises]);
-
-  // ── Derive muscle options from exercisesByMuscle keys ─────────────────────
-  const muscleOptions = useMemo<FilterOption[]>(() => {
-    return Object.keys(exercisesByMuscle)
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b))
-      .map((name) => {
-        const value = name.trim().toLowerCase();
-        return {
-          label: name.trim(),
-          value,
-          emoji: MUSCLE_EMOJI[value] ?? "💪",
-        };
-      });
-  }, [exercisesByMuscle]);
+  const [selectedMuscles, setSelectedMuscles] = React.useState<string[]>([]);
 
   // ── Selected exercise IDs ────────────────────────────────────────────────────
   const selectedIds = useMemo(
@@ -397,22 +216,30 @@ function ExerciseListContent({
     }
 
     // Equipment filter
-    if (selectedEquipment.size > 0) {
+    if (selectedEquipment.length > 0) {
+      const equipmentSet = new Set(
+        selectedEquipment.map((equipment) => equipment.trim().toLowerCase()),
+      );
+
       result = result.filter((ex) => {
         if (!ex.equipment) {
           // Matches exercises with no equipment if "none" is selected
-          return selectedEquipment.has("none");
+          return equipmentSet.has("none");
         }
         const value = ex.equipment.trim().toLowerCase();
-        return selectedEquipment.has(value);
+        return equipmentSet.has(value);
       });
     }
 
     // Muscle filter — uses the proper muscles array from ExerciseLibraryItem
-    if (selectedMuscles.size > 0) {
+    if (selectedMuscles.length > 0) {
+      const muscleSet = new Set(
+        selectedMuscles.map((muscle) => muscle.trim().toLowerCase()),
+      );
+
       result = result.filter((ex) =>
         (ex.muscles ?? []).some((m) =>
-          selectedMuscles.has(m.name.trim().toLowerCase()),
+          muscleSet.has(m.name.trim().toLowerCase()),
         ),
       );
     }
@@ -420,24 +247,24 @@ function ExerciseListContent({
     return result;
   }, [exercises, searchQuery, selectedEquipment, selectedMuscles]);
 
-  // ── Toggle helpers ────────────────────────────────────────────────────────────
-  const toggleSet = (
-    setter: React.Dispatch<React.SetStateAction<Set<string>>>,
-    value: string,
-  ) => {
-    setter((prev) => {
-      const next = new Set(prev);
-      next.has(value) ? next.delete(value) : next.add(value);
-      return next;
-    });
-  };
-
   const clearFilters = useCallback(() => {
-    setSelectedEquipment(new Set());
-    setSelectedMuscles(new Set());
+    setSelectedEquipment([]);
+    setSelectedMuscles([]);
   }, []);
 
-  const activeFilterCount = selectedEquipment.size + selectedMuscles.size;
+  const activeFilterCount = selectedEquipment.length + selectedMuscles.length;
+
+  const handleSaveEditsPress = () => {
+    onClose();
+
+    if (!onSaveEdits) return;
+
+    try {
+      onSaveEdits();
+    } catch (error) {
+      console.error("Error in onSaveEdits:", error);
+    }
+  };
 
   const toggleExercise = useCallback(
     (ex: ExerciseLibraryItem) => {
@@ -486,12 +313,10 @@ function ExerciseListContent({
             {showFilters ? (
               <>
                 <FilterPanel
-                  equipmentOptions={equipmentOptions}
-                  muscleOptions={muscleOptions}
                   selectedEquipment={selectedEquipment}
                   selectedMuscles={selectedMuscles}
-                  onToggleEquipment={(v) => toggleSet(setSelectedEquipment, v)}
-                  onToggleMuscle={(v) => toggleSet(setSelectedMuscles, v)}
+                  onSetEquipment={setSelectedEquipment}
+                  onSetMuscles={setSelectedMuscles}
                   onBack={() => setShowFilters(false)}
                   onClear={clearFilters}
                 />
@@ -603,7 +428,7 @@ function ExerciseListContent({
 
                   <TouchableOpacity
                     className="flex-1 rounded-full py-2 items-center justify-center bg-[#F7D57A]"
-                    onPress={onSaveEdits ?? (() => {})}
+                    onPress={handleSaveEditsPress}
                   >
                     <Text className="text-[#0B1626] font-semibold text-s">
                       Save Edits

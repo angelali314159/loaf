@@ -1,17 +1,22 @@
+/*
+OVERVIEW: This page appears after the user generates a workout through generateWorkout.tsx.
+It also does the actual backend for creating the generated workout based on the user's selected criteria and the exercise library.
+*/
+
 import Gradient from "@/components/ui/Gradient";
-import { useAuth } from "@/contexts/AuthContext";
 import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
-  Pressable,
   ScrollView,
+  Text,
   View,
 } from "react-native";
 import { Button, H2, P } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
+import PopupMessage from "../../components/ui/PopupMessage";
 import {
   ExerciseLibraryProvider,
   useExerciseLibrary,
@@ -37,23 +42,19 @@ function GeneratedPreviewContent() {
   const route = useRoute();
   const router = useRouter();
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
-
   const { exercises, loading: libraryLoading } = useExerciseLibrary();
-  const { user } = useAuth();
 
   const [workout, setWorkout] = useState<GeneratedWorkout | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showNoExercisesPopup, setShowNoExercisesPopup] = useState(false);
 
   useEffect(() => {
-    console.log("Route params:", route.params);
     if (route.params && !libraryLoading) {
       const params = route.params as {
         duration: number;
         selectedGroups: string[];
         selectedEquipments: string[];
       };
-      console.log("Generating workout with params:", params);
       generateWorkout(
         params.duration,
         params.selectedGroups,
@@ -67,25 +68,7 @@ function GeneratedPreviewContent() {
     selectedGroups: string[],
     selectedEquipments: string[],
   ) => {
-    console.log("generateWorkout called with:", {
-      duration,
-      selectedGroups,
-      selectedEquipments,
-    });
-
-    if (duration === 0 || selectedGroups.length === 0) {
-      console.log("Duration or groups empty, setting empty workout");
-      setWorkout({
-        duration,
-        muscleGroups: selectedGroups,
-        equipment: selectedEquipments,
-        exercises: [],
-      });
-      return;
-    }
-
     const maxExercises = Math.floor(duration / 10);
-    console.log("Max exercises for duration:", maxExercises);
 
     // Filter exercises based on equipment and muscle groups
     const filteredExercises = exercises.filter((exercise) => {
@@ -100,17 +83,8 @@ function GeneratedPreviewContent() {
       return hasEquipment && hasMuscle;
     });
 
-    console.log("Filtered exercises count:", filteredExercises.length);
-    console.log("Filtered exercises:", filteredExercises);
-
     if (filteredExercises.length === 0) {
-      console.log("No filtered exercises found");
-      setWorkout({
-        duration,
-        muscleGroups: selectedGroups,
-        equipment: selectedEquipments,
-        exercises: [],
-      });
+      setShowNoExercisesPopup(true);
       return;
     }
 
@@ -126,18 +100,13 @@ function GeneratedPreviewContent() {
 
       if (selectedGroups.length > 1) {
         const currentMuscleGroup = selectedGroups[muscleGroupIndex];
-        console.log(
-          `Set ${i + 1}: choosing from muscle group: ${currentMuscleGroup}`,
-        );
+
         exercisesToChooseFrom = exercisesToChooseFrom.filter((exercise) =>
           exercise.muscles.some((m) => m.name === currentMuscleGroup),
         );
 
         // If no exercises for this muscle group, use all unused filtered exercises
         if (exercisesToChooseFrom.length === 0) {
-          console.log(
-            `No exercises for ${currentMuscleGroup}, using all unused filtered`,
-          );
           exercisesToChooseFrom = filteredExercises.filter(
             (ex) => !usedExerciseIds.has(ex.exercise_lib_id),
           );
@@ -148,7 +117,6 @@ function GeneratedPreviewContent() {
 
       // If we've used all available exercises, break
       if (exercisesToChooseFrom.length === 0) {
-        console.log("No more unique exercises available");
         break;
       }
 
@@ -157,8 +125,6 @@ function GeneratedPreviewContent() {
         Math.random() * exercisesToChooseFrom.length,
       );
       const selectedExercise = exercisesToChooseFrom[randomIndex];
-
-      console.log(`Set ${i + 1}: Selected exercise:`, selectedExercise.name);
 
       usedExerciseIds.add(selectedExercise.exercise_lib_id);
       workoutExercises.push({
@@ -169,8 +135,6 @@ function GeneratedPreviewContent() {
       });
     }
 
-    console.log("Final workout exercises:", workoutExercises);
-
     setWorkout({
       duration,
       muscleGroups: selectedGroups,
@@ -180,19 +144,6 @@ function GeneratedPreviewContent() {
   };
 
   const handleStartWorkout = () => {
-    console.log("handleStartWorkout called");
-    console.log("Current workout state:", workout);
-
-    if (!workout) {
-      console.log("No workout to start");
-      return;
-    }
-
-    if (workout.exercises.length === 0) {
-      console.log("No exercises in workout");
-      return;
-    }
-
     setLoading(true);
 
     // Format exercises to match workoutList.tsx format exactly
@@ -204,11 +155,9 @@ function GeneratedPreviewContent() {
       }),
     );
 
-    console.log("Formatted exercises for inWorkout:", formattedExercises);
-
     try {
       router.push({
-        pathname: "/(tabs)/inWorkout",
+        pathname: "/inWorkout",
         params: {
           workoutId: "generated",
           workoutName: "Generated Workout",
@@ -237,22 +186,42 @@ function GeneratedPreviewContent() {
       style={{ paddingBottom: height * 0.1, paddingHorizontal: 20 }}
     >
       <Gradient />
-      <Pressable onPress={() => router.back()}>
-        <Image className="" source={arrow} resizeMode="contain" />
-      </Pressable>
+      <BackArrow page="/generateWorkout" />
 
       <ScrollView className="flex-1">
         <View className="gap-6">
           {workout && workout.exercises.length > 0 ? (
             <>
               <View className="gap-2">
-                <H2 style={{ fontFamily: "Inter_SemiBold" }}>Your Workout</H2>
-                <P className="text-gray-600">
-                  Duration: {workout.duration} minutes
-                </P>
-                <P className="text-gray-600">
-                  Total Exercises: {workout.exercises.length}
-                </P>
+                <H2 style={{ fontFamily: "Inter_SemiBold" }}>
+                  Your Generated Workout
+                </H2>
+
+                <View className="mt-6 flex-row items-center justify-between w-full">
+                  <View className="flex-1 items-center">
+                    <Text style={{ fontSize: 12, color: "#32393d" }}>
+                      Duration
+                    </Text>
+                    <Text
+                      style={{ fontSize: 16, color: "#32393d", marginTop: 8 }}
+                    >
+                      {workout.exercises.length * 10} min
+                    </Text>
+                  </View>
+
+                  <View className="h-12 w-[1px] bg-[#B9B9B9] opacity-80" />
+
+                  <View className="flex-1 items-center">
+                    <Text style={{ fontSize: 12, color: "#32393d" }}>
+                      Total Exercises
+                    </Text>
+                    <Text
+                      style={{ fontSize: 16, color: "#32393d", marginTop: 8 }}
+                    >
+                      {workout.exercises.length}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
               <View className="gap-3">
@@ -267,7 +236,7 @@ function GeneratedPreviewContent() {
                           style={{ fontFamily: "Inter_SemiBold" }}
                           className="text-lg"
                         >
-                          {index + 1}. {exercise.name}
+                          {exercise.name}
                         </P>
                         {exercise.equipment && (
                           <P className="text-gray-500 text-sm mt-1">
@@ -276,20 +245,12 @@ function GeneratedPreviewContent() {
                         )}
                       </View>
                     </View>
-                    <P className="text-gray-700 mt-2">
-                      {exercise.sets} sets × 3 min per set
-                    </P>
                   </View>
                 ))}
               </View>
             </>
           ) : (
-            <View className="items-center justify-center py-10">
-              <P className="text-gray-600 text-center">
-                No exercises found for the selected criteria. Try adjusting your
-                filters.
-              </P>
-            </View>
+            <View className="items-center justify-center py-10"></View>
           )}
         </View>
       </ScrollView>
@@ -315,6 +276,17 @@ function GeneratedPreviewContent() {
           />
         </View>
       )}
+
+      <PopupMessage
+        visible={showNoExercisesPopup}
+        title="No exercises found"
+        message="No exercises were found using that filter. Please adjust your selections and try again."
+        type="error"
+        onClose={() => {
+          setShowNoExercisesPopup(false);
+          router.push("/generateWorkout");
+        }}
+      />
     </View>
   );
 }

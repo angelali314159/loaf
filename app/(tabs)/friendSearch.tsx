@@ -1,23 +1,21 @@
 import Gradient from "@/components/ui/Gradient";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
 import React from "react";
 import {
   Dimensions,
   Image,
-  Pressable,
   ScrollView,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Button, H3, P } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
 import "../../global.css";
 import { supabase } from "../../utils/supabase";
 
 export default function FriendSearch() {
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
   const profile = require("../../assets/images/profile-pic.png");
 
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -201,9 +199,8 @@ export default function FriendSearch() {
     >
       <Gradient />
       {/* Back arrow  */}
-      <Pressable onPress={() => router.navigate("/profile")}>
-        <Image className="" source={arrow} resizeMode="contain" />
-      </Pressable>
+      <BackArrow page="/profile" />
+
       {/* Search Bar */}
       <View className="flex flex-row items-center bg-[#E6E6E6] rounded-full px-4 py-2">
         <Feather name="search" size={18} color="#666" />
@@ -291,7 +288,7 @@ export default function FriendSearch() {
                       title={
                         pendingRequests.has(friend.id) ? "Requested" : "Add"
                       }
-                      width="18%"
+                      width={pendingRequests.has(friend.id) ? "28%" : "18%"}
                       fontSize={12}
                       height={8}
                       onPress={() => handleAddFriend(friend.id)}

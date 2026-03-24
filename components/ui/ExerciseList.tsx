@@ -19,8 +19,8 @@ import {
   ExerciseLibraryItem,
   ExerciseLibraryProvider,
   useExerciseLibrary,
-} from "../contexts/ExerciseLibraryContext";
-import { BottomFade, TopFade } from "./FadeEdges";
+} from "../../contexts/ExerciseLibraryContext";
+import { BottomFade, TopFade } from "../FadeEdges";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -50,40 +50,40 @@ interface ExerciseListProps {
 // ─── Emoji lookup maps (cosmetic only — options still come from the DB) ────────
 
 const EQUIPMENT_EMOJI: Record<string, string> = {
-  dumbbell:   "🏋️",
-  barbell:    "🏋️‍♂️",
+  dumbbell: "🏋️",
+  barbell: "🏋️‍♂️",
   kettlebell: "🔔",
-  machine:    "⚙️",
-  cable:      "🔗",
-  plates:     "🪨",
-  bands:      "〰️",
-  mat:        "🟦",
+  machine: "⚙️",
+  cable: "🔗",
+  plates: "🪨",
+  bands: "〰️",
+  mat: "🟦",
   "body weight": "🧍",
   bodyweight: "🧍",
-  none:       "✕",
+  none: "✕",
 };
 
 const MUSCLE_EMOJI: Record<string, string> = {
-  chest:      "🫁",
-  back:       "🔙",
-  shoulders:  "💪",
-  biceps:     "💪",
-  triceps:    "💪",
-  forearms:   "🦾",
-  core:       "🔥",
-  glutes:     "🍑",
-  quads:      "🦵",
+  chest: "🫁",
+  back: "🔙",
+  shoulders: "💪",
+  biceps: "💪",
+  triceps: "💪",
+  forearms: "🦾",
+  core: "🔥",
+  glutes: "🍑",
+  quads: "🦵",
   hamstrings: "🦵",
-  calves:     "🦿",
-  traps:      "🏔️",
-  lats:       "🪽",
+  calves: "🦿",
+  traps: "🏔️",
+  lats: "🪽",
 };
 
 // ─── Derived filter option type ───────────────────────────────────────────────
 
 interface FilterOption {
-  label: string;   // Display name (DB casing)
-  value: string;   // Normalized lowercase key used for Set membership
+  label: string; // Display name (DB casing)
+  value: string; // Normalized lowercase key used for Set membership
   emoji: string;
 }
 
@@ -96,7 +96,12 @@ interface AnimatedFilterTileProps {
   onPress: () => void;
 }
 
-function AnimatedFilterTile({ label, emoji, active, onPress }: AnimatedFilterTileProps) {
+function AnimatedFilterTile({
+  label,
+  emoji,
+  active,
+  onPress,
+}: AnimatedFilterTileProps) {
   const anim = useRef(new Animated.Value(active ? 1 : 0)).current;
 
   useEffect(() => {
@@ -117,7 +122,11 @@ function AnimatedFilterTile({ label, emoji, active, onPress }: AnimatedFilterTil
   });
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75} className="w-[30%]">
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.75}
+      className="w-[30%]"
+    >
       {/* Animated colors + non-standard borderWidth must stay inline */}
       <Animated.View
         className="aspect-square rounded-2xl items-center justify-center p-2"
@@ -184,7 +193,9 @@ function FilterPanel({
         {/* Equipment section — only rendered when data has loaded */}
         {equipmentOptions.length > 0 && (
           <>
-            <Text className="text-[#0B1626] text-2xl font-bold mb-4">Equipment</Text>
+            <Text className="text-[#0B1626] text-2xl font-bold mb-4">
+              Equipment
+            </Text>
             <View className="flex-row flex-wrap gap-2.5">
               {equipmentOptions.map((opt) => (
                 <AnimatedFilterTile
@@ -281,8 +292,12 @@ const ExerciseRow = React.memo(function ExerciseRow({
           <Text className="text-[#32393d] font-bold">{getAvatar(ex.name)}</Text>
         </View>
         <View className="flex-1 ml-4">
-          <Text className="text-[#0B1626] text-xl font-semibold">{ex.name}</Text>
-          <Text className="text-[#6B7280] text-base mt-1">{getSubtitle(ex)}</Text>
+          <Text className="text-[#0B1626] text-xl font-semibold">
+            {ex.name}
+          </Text>
+          <Text className="text-[#6B7280] text-base mt-1">
+            {getSubtitle(ex)}
+          </Text>
         </View>
         <View className="ml-4">
           <Feather
@@ -312,8 +327,12 @@ function ExerciseListContent({
 
   const [searchQuery, setSearchQuery] = React.useState("");
   const [showFilters, setShowFilters] = React.useState(false);
-  const [selectedEquipment, setSelectedEquipment] = React.useState<Set<string>>(new Set());
-  const [selectedMuscles, setSelectedMuscles] = React.useState<Set<string>>(new Set());
+  const [selectedEquipment, setSelectedEquipment] = React.useState<Set<string>>(
+    new Set(),
+  );
+  const [selectedMuscles, setSelectedMuscles] = React.useState<Set<string>>(
+    new Set(),
+  );
 
   // ── Derive equipment options from real DB data ──────────────────────────────
   const equipmentOptions = useMemo<FilterOption[]>(() => {
@@ -420,22 +439,29 @@ function ExerciseListContent({
 
   const activeFilterCount = selectedEquipment.size + selectedMuscles.size;
 
-  const toggleExercise = useCallback((ex: ExerciseLibraryItem) => {
-    if (selectedIds.has(ex.exercise_lib_id)) {
-      onRemoveExercise ? onRemoveExercise(ex) : onSelectExercise(ex);
-    } else {
-      onSelectExercise(ex);
-    }
-  }, [selectedIds, onRemoveExercise, onSelectExercise]);
+  const toggleExercise = useCallback(
+    (ex: ExerciseLibraryItem) => {
+      if (selectedIds.has(ex.exercise_lib_id)) {
+        onRemoveExercise ? onRemoveExercise(ex) : onSelectExercise(ex);
+      } else {
+        onSelectExercise(ex);
+      }
+    },
+    [selectedIds, onRemoveExercise, onSelectExercise],
+  );
 
   // ── Stable callbacks ─────────────────────────────────────────────────────────
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       {/* StyleSheet.absoluteFillObject has no NativeWind equivalent */}
       <View style={styles.overlay}>
-
         {/* Close button */}
         <View className="items-center pt-10">
           <TouchableOpacity
@@ -530,7 +556,10 @@ function ExerciseListContent({
                     data={filteredExercises}
                     keyExtractor={(ex) => String(ex.exercise_lib_id)}
                     className="flex-1 px-6"
-                    contentContainerStyle={{ paddingBottom: 110, paddingTop: 10 }}
+                    contentContainerStyle={{
+                      paddingBottom: 110,
+                      paddingTop: 10,
+                    }}
                     keyboardDismissMode="on-drag"
                     // extraData tells FlatList to re-check row props when selection changes
                     // without this, memoized rows won't update even when isSelected flips
@@ -549,7 +578,9 @@ function ExerciseListContent({
                         </View>
                       ) : (
                         <View className="py-10 items-center">
-                          <Text className="text-[#32393d]">No exercises found.</Text>
+                          <Text className="text-[#32393d]">
+                            No exercises found.
+                          </Text>
                         </View>
                       )
                     }

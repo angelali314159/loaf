@@ -3,16 +3,16 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
   Image,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import PopupMessage from "../../components/PopupMessage";
 import { Button, H3, P } from "../../components/typography";
+import Divider from "../../components/ui/Divider";
+import Gradient from "../../components/ui/Gradient";
+import PopupMessage from "../../components/ui/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { compressImage } from "../../utils/imageCompression";
 import { MAX_FILE_SIZE, STORAGE_BUCKETS } from "../../utils/storageConstants";
@@ -260,30 +260,7 @@ export default function Settings() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View
-        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
-      >
-        <Svg
-          height={Dimensions.get("screen").height * 0.5}
-          width={Dimensions.get("screen").width}
-        >
-          <Defs>
-            <RadialGradient
-              id="topSemiCircle"
-              cx="50%" //centered horizontally
-              cy="0%" //top edge
-              rx="150%" //horiztonal radius
-              ry="70%" //vertical radius
-              gradientUnits="objectBoundingBox"
-            >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-        </Svg>
-      </View>
+      <Gradient />
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
@@ -356,16 +333,7 @@ export default function Settings() {
           )}
         </View>
 
-        {/* Divider */}
-        <View
-          style={{
-            height: 1,
-            backgroundColor: "#DADADA",
-            marginTop: 24,
-            marginBottom: 24,
-            marginHorizontal: 24,
-          }}
-        />
+        <Divider />
 
         {/* Logout Button */}
         <View className="px-6 mt-4">

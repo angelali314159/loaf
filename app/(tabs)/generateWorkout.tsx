@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { Dimensions, ScrollView, View } from "react-native";
 import { Button, H2 } from "../../components/typography";
 import BackArrow from "../../components/ui/BackArrow";
+import PopupMessage from "../../components/ui/PopupMessage";
 import Sliders from "../../components/ui/Slider";
 
 export default function GenerateWorkout() {
@@ -14,6 +15,7 @@ export default function GenerateWorkout() {
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
   const [sliderValue, setSliderValue] = useState(0);
+  const [showSelectionError, setShowSelectionError] = useState(false);
   const { height } = Dimensions.get("window");
 
   return (
@@ -67,6 +69,15 @@ export default function GenerateWorkout() {
             className="flex-1"
             title="Generate"
             onPress={() => {
+              if (
+                selectedGroups.length === 0 ||
+                selectedEquipments.length === 0 ||
+                sliderValue === 0
+              ) {
+                setShowSelectionError(true);
+                return;
+              }
+
               console.log(
                 "Selected Groups: ",
                 selectedGroups,
@@ -90,6 +101,14 @@ export default function GenerateWorkout() {
           />
         </View>
       </View>
+
+      <PopupMessage
+        visible={showSelectionError}
+        title="Error"
+        message="Please choose at least one muscle group, one equipment option, and set time above 0 minutes."
+        type="error"
+        onClose={() => setShowSelectionError(false)}
+      />
     </ExerciseLibraryProvider>
   );
 }

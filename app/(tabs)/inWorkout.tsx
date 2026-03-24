@@ -22,6 +22,7 @@ import {
   useExerciseStats,
 } from "../../contexts/ExerciseStatsContext";
 import { supabase } from "../../utils/supabase";
+import BackArrow from "../../components/ui/BackArrow";
 
 interface Exercise {
   exercise_lib_id: number;
@@ -1144,12 +1145,7 @@ function InWorkoutContent() {
           {/* Header */}
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1 mr-2">
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className="pr-3 py-2"
-              >
-                <Feather name="chevron-left" size={26} color="#32393d" />
-              </TouchableOpacity>
+              <BackArrow />
 
               <View style={{ flex: 1 }}>
                 <Text

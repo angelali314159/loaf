@@ -4,8 +4,9 @@ import MuscleGroups from "@/components/ui/MuscleGroups";
 import { ExerciseLibraryProvider } from "@/contexts/ExerciseLibraryContext";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Dimensions, Image, Pressable, ScrollView, View } from "react-native";
+import { Dimensions, ScrollView, View } from "react-native";
 import { Button, H2 } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
 import Sliders from "../../components/ui/Slider";
 
 export default function GenerateWorkout() {
@@ -14,7 +15,6 @@ export default function GenerateWorkout() {
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
   const [sliderValue, setSliderValue] = useState(0);
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
 
   return (
     <ExerciseLibraryProvider>
@@ -23,9 +23,7 @@ export default function GenerateWorkout() {
         style={{ paddingBottom: height * 0.1, paddingHorizontal: 20 }}
       >
         <Gradient />
-        <Pressable onPress={() => router.navigate("/workoutList")}>
-          <Image className="" source={arrow} resizeMode="contain" />
-        </Pressable>
+        <BackArrow page="/(tabs)/workoutList" />
         <ScrollView className="flex-1">
           <View className="gap-6">
             <View className="gap-2">

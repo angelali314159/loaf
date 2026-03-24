@@ -2,14 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  Image,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
+import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Button, H3, P } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
 import Divider from "../../components/ui/Divider";
 import Gradient from "../../components/ui/Gradient";
 import PopupMessage from "../../components/ui/PopupMessage";
@@ -265,6 +260,7 @@ export default function Settings() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View className="px-6 pt-16 pb-6">
+          <BackArrow page="/(tabs)/profile" />
           <H3 baseSize={24}>Settings</H3>
         </View>
 

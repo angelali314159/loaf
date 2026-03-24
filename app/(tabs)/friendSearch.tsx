@@ -7,7 +7,7 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { Button, H3, P } from "../../components/typography";
 import BackArrow from "../../components/ui/BackArrow";
@@ -288,7 +288,7 @@ export default function FriendSearch() {
                       title={
                         pendingRequests.has(friend.id) ? "Requested" : "Add"
                       }
-                      width="18%"
+                      width={pendingRequests.has(friend.id) ? "28%" : "18%"}
                       fontSize={12}
                       height={8}
                       onPress={() => handleAddFriend(friend.id)}

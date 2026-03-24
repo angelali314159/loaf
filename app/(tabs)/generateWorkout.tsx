@@ -78,14 +78,6 @@ export default function GenerateWorkout() {
                 return;
               }
 
-              console.log(
-                "Selected Groups: ",
-                selectedGroups,
-                "Selected Equipments: ",
-                selectedEquipments,
-                "Duration: ",
-                sliderValue,
-              );
               router.push({
                 pathname: "/generatedPreview",
                 params: {

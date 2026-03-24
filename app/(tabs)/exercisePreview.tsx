@@ -38,9 +38,6 @@ const EXERCISE_IMAGES: Record<string, any> = {
 };
 
 function ExercisePreviewContent() {
-  // Support BOTH styles of params:
-  // - old: exerciseName
-  // - new: exerciseId (from your long-press)
   const params = useLocalSearchParams<{
     exerciseName?: string;
     exerciseId?: string;
@@ -346,7 +343,6 @@ function ExercisePreviewContent() {
   );
 }
 
-// Wrapper with provider
 export default function ExercisePreview() {
   return (
     <ExerciseLibraryProvider>

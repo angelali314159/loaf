@@ -1,10 +1,16 @@
-import { BlurView } from 'expo-blur';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { H1, H2, P } from '../../components/typography';
-
+import { BlurView } from "expo-blur";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { H1, H2, P } from "../../components/typography";
+import Gradient from "../../components/ui/Gradient";
 
 interface Exercise {
   name: string;
@@ -21,7 +27,7 @@ interface WorkoutPlan {
 
 const generateWeek = () => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); 
+  today.setHours(0, 0, 0, 0);
 
   const dayOfWeek = today.getDay();
   const sunday = new Date(today);
@@ -54,9 +60,8 @@ const generateWeek = () => {
   return week;
 };
 
-
 export default function LandingMain() {
-  const { username = 'Joooy' } = useLocalSearchParams<{ username?: string }>();
+  const { username = "Joooy" } = useLocalSearchParams<{ username?: string }>();
   const [savedExercises, setSavedExercises] = useState<WorkoutPlan[]>([]);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
@@ -64,9 +69,15 @@ export default function LandingMain() {
   const week = useMemo(() => generateWeek(), []);
 
   const mockWorkoutPlans: WorkoutPlan[] = [
-    { name: "Upper Body Blast", exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"] },
+    {
+      name: "Upper Body Blast",
+      exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"],
+    },
     { name: "Leg Day", exercises: ["Squats", "Lunges", "Calf Raises"] },
-    { name: "Core Focus", exercises: ["Planks", "Russian Twists", "Leg Raises"] }
+    {
+      name: "Core Focus",
+      exercises: ["Planks", "Russian Twists", "Leg Raises"],
+    },
   ];
 
   useEffect(() => {
@@ -76,8 +87,8 @@ export default function LandingMain() {
 
   const navigateToWorkout = (workoutPlan: WorkoutPlan) => {
     router.push({
-      pathname: '/(tabs)/inWorkout',
-      params: { workoutId: workoutPlan.name }
+      pathname: "/(tabs)/inWorkout",
+      params: { workoutId: workoutPlan.name },
     });
   };
 
@@ -88,47 +99,26 @@ export default function LandingMain() {
         style={{
           width: 479.338,
           height: 119.909,
-          position: 'absolute',
+          position: "absolute",
           left: -50,
           top: -90,
           borderRadius: 479.338,
-          backgroundColor: '#FFFEFE',
+          backgroundColor: "#FFFEFE",
         }}
       />
 
       <View className="flex-1 bg-white">
-        <ScrollView className="flex-1 mx-4"
-         contentContainerStyle={{ paddingBottom: 140 }}
-         showsVerticalScrollIndicator={false}
+        <ScrollView
+          className="flex-1 mx-4"
+          contentContainerStyle={{ paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
         >
-
-          {/* Semicircle Gradient Background */}
-          <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
-            <Svg
-              height={Dimensions.get('screen').height * .5}
-              width={Dimensions.get('screen').width}
-            >
-              <Defs>
-                <RadialGradient
-                  id="topSemiCircle"
-                  cx="50%"
-                  cy="0%"
-                  rx="120%"
-                  ry="70%"
-                  gradientUnits="objectBoundingBox"
-                >
-                  <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-                  <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-            </Svg>
-          </View>
+          <Gradient />
 
           {/* Header */}
           <View className="mt-32 mb-4 flex-row items-center justify-between px-4">
             <Image
-              source={require('../../assets/images/profile-pic.png')}
+              source={require("../../assets/images/profile-pic.png")}
               style={{ height: 48, width: 48, borderRadius: 24 }}
               resizeMode="cover"
             />
@@ -139,7 +129,7 @@ export default function LandingMain() {
             </View>
 
             <Image
-              source={require('../../assets/images/bell.png')}
+              source={require("../../assets/images/bell.png")}
               style={{ height: 24, width: 24 }}
               resizeMode="contain"
             />
@@ -185,7 +175,6 @@ export default function LandingMain() {
             ))}
           </View>
 
-
           {/* Workouts Section */}
           <View className="mb-6">
             <H1 baseSize={16}>Planned Workouts</H1>
@@ -202,7 +191,7 @@ export default function LandingMain() {
                       {plan.name}
                     </P>
                     <P className="text-[#32393d] opacity-70 mt-1">
-                      {plan.exercises.join(', ')}
+                      {plan.exercises.join(", ")}
                     </P>
                   </View>
 
@@ -218,127 +207,123 @@ export default function LandingMain() {
 
           {/* Explore Exercise Section */}
           <View className="mb-6 flex-row items-center justify-between">
-          <H1 baseSize={13}>
-            Explore Exercise Categories
-          </H1>
+            <H1 baseSize={13}>Explore Exercise Categories</H1>
 
-          <Pressable onPress={() => router.push('/exploreCategories')}>
-          <Text
-            style={{ color: "#FAB906", fontSize: 10 }}
-            className="font-bold tracking-wider"
+            <Pressable onPress={() => router.push("/exploreCategories")}>
+              <Text
+                style={{ color: "#FAB906", fontSize: 10 }}
+                className="font-bold tracking-wider"
+              >
+                View More
+              </Text>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-6"
           >
-            View More
-          </Text>
-        </Pressable>
+            <View className="flex-row px-4">
+              {/* Abs */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Abs_Cat.png")}
+                  style={{
+                    height: 150,
+                    width: 150,
+                    marginTop: 3.5,
+                    marginRight: 40,
+                    marginLeft: 30,
+                  }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d]">
+                  Abs
+                </Text>
+              </View>
 
-          
-        </View>
+              {/* Back */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Back_Cat.png")}
+                  style={{ height: 150, width: 150 }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d]">
+                  Back
+                </Text>
+              </View>
 
-        <ScrollView
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  className="mb-6"
->
-  <View className="flex-row px-4">
+              {/* Chest */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Chest_Cat.png")}
+                  style={{ height: 150, width: 150, marginTop: -7 }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d]">
+                  Chest
+                </Text>
+              </View>
 
-    {/* Abs */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190 }}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Abs_Cat.png')}
-        style={{ height: 150, width: 150, marginTop: 3.5, marginRight: 40, marginLeft: 30 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d]">
-        Abs
-      </Text>
-    </View>
+              {/* Stretching */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Stretching_Cat.png")}
+                  style={{ height: 150, width: 150, marginTop: 1.5 }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d]">
+                  Stretching
+                </Text>
+              </View>
 
-    {/* Back */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190 }}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Back_Cat.png')}
-        style={{ height: 150, width: 150 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d]">
-        Back
-      </Text>
-    </View>
+              {/* Arms */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190, marginTop: -7 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Arms_Cat.png")}
+                  style={{ height: 150, width: 150 }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d] mt-8">
+                  Arms
+                </Text>
+              </View>
 
-    {/* Chest */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190 }}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Chest_Cat.png')}
-        style={{ height: 150, width: 150, marginTop: -7 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d]">
-        Chest
-      </Text>
-    </View>
-
-    {/* Stretching */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190 }}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Stretching_Cat.png')}
-        style={{ height: 150, width: 150, marginTop: 1.5 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d]">
-        Stretching
-      </Text>
-    </View>
-
-    {/* Arms */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190, marginTop: -7}}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Arms_Cat.png')}
-        style={{ height: 150, width: 150 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d] mt-8">
-        Arms
-      </Text>
-    </View>
-
-    {/* Glutes */}
-    <View
-      className="mr-6 items-center justify-between"
-      style={{ width: 150, height: 190, marginTop: 5}}
-    >
-      <Image
-        source={require('../../assets/images/Cats/Glutes_Cat.png')}
-        style={{ height: 150, width: 150 }}
-        resizeMode="contain"
-      />
-      <Text className="text-center font-semibold text-[#32393d]">
-        Glutes
-      </Text>
-    </View>
-
-  </View>
-</ScrollView>
-
-        
-
+              {/* Glutes */}
+              <View
+                className="mr-6 items-center justify-between"
+                style={{ width: 150, height: 190, marginTop: 5 }}
+              >
+                <Image
+                  source={require("../../assets/images/Cats/Glutes_Cat.png")}
+                  style={{ height: 150, width: 150 }}
+                  resizeMode="contain"
+                />
+                <Text className="text-center font-semibold text-[#32393d]">
+                  Glutes
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
         </ScrollView>
       </View>
     </View>
   );
 }
-

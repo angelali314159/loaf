@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Modal, TouchableOpacity, View } from "react-native";
-import { H2, H3, P } from "./typography";
+import { H2, H3, P } from "../typography";
 
 interface Exercise {
   exercise_lib_id: number;

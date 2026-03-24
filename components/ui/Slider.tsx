@@ -31,7 +31,7 @@ const Sliders: React.FunctionComponent<SlidersComponentProps> = ({
           onValueChange={handleValueChange}
           maximumValue={120}
           minimumValue={0}
-          step={1}
+          step={5}
           allowTouchTrack
           minimumTrackTintColor="#FCDE8C"
           maximumTrackTintColor="#e0e0e0c8"

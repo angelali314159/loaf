@@ -6,12 +6,11 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
-  Pressable,
   ScrollView,
-  View,
+  View
 } from "react-native";
 import { Button, H2, P } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
 import {
   ExerciseLibraryProvider,
   useExerciseLibrary,
@@ -37,7 +36,6 @@ function GeneratedPreviewContent() {
   const route = useRoute();
   const router = useRouter();
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
 
   const { exercises, loading: libraryLoading } = useExerciseLibrary();
   const { user } = useAuth();
@@ -237,9 +235,7 @@ function GeneratedPreviewContent() {
       style={{ paddingBottom: height * 0.1, paddingHorizontal: 20 }}
     >
       <Gradient />
-      <Pressable onPress={() => router.back()}>
-        <Image className="" source={arrow} resizeMode="contain" />
-      </Pressable>
+      <BackArrow page="/generateWorkout" />
 
       <ScrollView className="flex-1">
         <View className="gap-6">

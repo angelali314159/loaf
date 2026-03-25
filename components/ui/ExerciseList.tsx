@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React, { useCallback, useMemo } from "react";
 import {
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -23,6 +24,41 @@ import { BottomFade, TopFade } from "../FadeEdges";
 import { H1 } from "../typography";
 import Equipment from "./Equipment";
 import MuscleGroups from "./MuscleGroups";
+
+// ─── Exercise Images ──────────────────────────────────────────────────────────
+// Static mapping of all exercise images in assets/images/exercises/
+// Add new images here as you add them to the folder
+const EXERCISE_IMAGES: Record<string, any> = {
+  "filler.jpg": require("../../assets/images/Exercises/filler.jpg"),
+  "latPulldown.jpg": require("../../assets/images/Exercises/latPulldown.jpg"),
+  "legRaises.jpg": require("../../assets/images/Exercises/legRaises.jpg"),
+  "russianTwists.jpg": require("../../assets/images/Exercises/russianTwists.jpg"),
+  "shoulderPress.jpg": require("../../assets/images/Exercises/shoulderPress.jpg"),
+  "seatedRows.jpg": require("../../assets/images/Exercises/seatedRows.jpg"),
+  "shoulderShrugs.jpg": require("../../assets/images/Exercises/shoulderShrugs.jpg"),
+  "sidePlanks.jpg": require("../../assets/images/Exercises/sidePlanks.jpg"),
+  "sitUps.jpg": require("../../assets/images/Exercises/sitUps.jpg"),
+  "standingCalfRaises.jpg": require("../../assets/images/Exercises/standingCalfRaises.jpg"),
+  "tricepKickbacks.jpg": require("../../assets/images/Exercises/tricepKickbacks.jpg"),
+  "tricepsDips.jpg": require("../../assets/images/Exercises/tricepsDips.jpg"),
+  "tricepsRopePulldown.jpg": require("../../assets/images/Exercises/tricepsRopePulldown.jpg"),
+  "frontRaise.jpg": require("../../assets/images/Exercises/frontRaise.jpg"),
+  "preacherCurl.jpg": require("../../assets/images/Exercises/preacherCurl.jpg"),
+  "lateralRaiseCable.jpg": require("../../assets/images/Exercises/lateralRaiseCable.jpg"),
+  "latPulldownCable.jpg": require("../../assets/images/Exercises/latPulldownCable.jpg"),
+  "seatedCalfRaise.jpg": require("../../assets/images/Exercises/seatedCalfRaise.jpg"),
+  "sitUpsBodyweight.jpg": require("../../assets/images/Exercises/sitUpsBodyweight.jpg"),
+  "standingCalfRaisesDumbbell.jpg": require("../../assets/images/Exercises/standingCalfRaisesDumbbell.jpg"),
+  "tricepDips.jpg": require("../../assets/images/Exercises/tricepsDips.jpg"),
+  "skullCrusher.jpg": require("../../assets/images/Exercises/filler.jpg"),
+};
+
+function getImageSource(imageName: string | null | undefined) {
+  if (!imageName) return null;
+  const fileName = imageName.split("/").pop() || imageName;
+  return EXERCISE_IMAGES[fileName] || null;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 /**
@@ -137,6 +173,8 @@ const ExerciseRow = React.memo(function ExerciseRow({
   isSelected,
   onPress,
 }: ExerciseRowProps) {
+  const imageSource = getImageSource(ex.image_name);
+
   return (
     <TouchableOpacity
       activeOpacity={0.75}
@@ -156,7 +194,17 @@ const ExerciseRow = React.memo(function ExerciseRow({
         }`}
       >
         <View className="w-16 h-16 rounded-full bg-[#DADDE3] items-center justify-center overflow-hidden">
-          <Text className="text-[#32393d] font-bold">{getAvatar(ex.name)}</Text>
+          {imageSource ? (
+            <Image
+              source={imageSource}
+              style={{ width: "100%", height: "100%" }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text className="text-[#32393d] font-bold">
+              {getAvatar(ex.name)}
+            </Text>
+          )}
         </View>
         <View className="flex-1 ml-4">
           <Text className="text-[#0B1626] text-xl font-semibold">

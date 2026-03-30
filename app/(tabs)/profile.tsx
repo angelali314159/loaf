@@ -31,6 +31,7 @@ interface FriendPost {
   workout_post_id: number;
   profile_id: string;
   username: string;
+  taggedUsernames: string[];
   image_url: string;
   description: string;
   created_at: string;
@@ -186,6 +187,7 @@ export default function Profile() {
           created_at,
           visible_stats,
           like_count,
+          tagged_friends,
           profiles!inner(username)
         `,
         )
@@ -200,18 +202,52 @@ export default function Profile() {
 
       console.log("Fetched posts:", posts); // Debug log
 
+      const allTaggedIds = Array.from(
+        new Set(
+          (posts || []).flatMap((post: any) =>
+            Array.isArray(post.tagged_friends) ? post.tagged_friends : [],
+          ),
+        ),
+      );
+
+      const usernamesById = new Map<string, string>();
+
+      if (allTaggedIds.length > 0) {
+        const { data: taggedProfiles, error: taggedProfilesError } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", allTaggedIds);
+
+        if (taggedProfilesError) {
+          console.error("Error fetching tagged usernames:", taggedProfilesError);
+        } else {
+          (taggedProfiles || []).forEach((profile: any) => {
+            usernamesById.set(profile.id, profile.username);
+          });
+        }
+      }
+
       // Format posts data
-      const formattedPosts: FriendPost[] = (posts || []).map((post) => ({
-        workout_post_id: post.workout_post_id,
-        profile_id: post.profile_id,
-        username: (post.profiles as any).username,
-        image_url: post.image_url || "",
-        description: post.description || "",
-        created_at: post.created_at,
-        visible_stats: post.visible_stats || [],
-        like_count: post.like_count || 0,
-        isLiked: false, // TO-DO: Check if user liked this post
-      }));
+      const formattedPosts: FriendPost[] = (posts || []).map((post) => {
+        const tagIdsFromColumn = Array.isArray(post.tagged_friends)
+          ? post.tagged_friends
+          : [];
+
+        return {
+          workout_post_id: post.workout_post_id,
+          profile_id: post.profile_id,
+          username: (post.profiles as any).username,
+          taggedUsernames: tagIdsFromColumn
+            .map((tagId) => usernamesById.get(tagId))
+            .filter((username): username is string => Boolean(username)),
+          image_url: post.image_url || "",
+          description: post.description || "",
+          created_at: post.created_at,
+          visible_stats: post.visible_stats || [],
+          like_count: post.like_count || 0,
+          isLiked: false,
+        };
+      });
 
       setFriendPosts(formattedPosts);
     } catch (error) {
@@ -419,6 +455,11 @@ export default function Profile() {
                     <P className="text-[#32393d] font-semibold">
                       {post.username}
                     </P>
+                    {post.taggedUsernames.length > 0 && (
+                      <P className="text-[#565656] text-xs mt-1">
+                        with {post.taggedUsernames.map((name) => `@${name}`).join(", ")}
+                      </P>
+                    )}
                     <P className="text-[#565656] text-xs">
                       {formatTimeAgo(post.created_at)}
                     </P>

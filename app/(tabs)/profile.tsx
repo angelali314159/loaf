@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -10,15 +10,21 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { H4, P } from "../../components/typography";
-import LeaguePopup from "../../components/ui/leaguePopup";
+import Gradient from "../../components/ui/Gradient";
+import LeaguePopup from "../../components/ui/LeaguePopup";
 import { useAuth } from "../../contexts/AuthContext";
+import { STORAGE_BUCKETS } from "../../utils/storageConstants";
 import { supabase } from "../../utils/supabase";
+import {
+  getSignedImageUrl,
+  getSignedImageUrls,
+} from "../../utils/supabaseStorage";
 
 interface UserProfile {
   username: string;
   name: string;
+  profile_image_url?: string;
 }
 
 interface VisibleStat {
@@ -43,6 +49,7 @@ interface FriendPost {
 export default function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [friendsCount, setFriendsCount] = useState(0);
   const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
@@ -50,6 +57,7 @@ export default function Profile() {
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const [isLeaguePopupVisible, setIsLeaguePopupVisible] = useState(false);
+  const isMountedRef = useRef(true);
   const screenWidth = Dimensions.get("window").width;
 
   useEffect(() => {
@@ -60,35 +68,75 @@ export default function Profile() {
       fetchFriendPosts();
       fetchPendingRequests();
     }
-  }, [user]);
+  }, [user?.id]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (user?.id) {
-        fetchFriendsCount();
-        fetchPendingRequests();
+        // Run all fetches in parallel instead of sequentially
+        Promise.all([
+          fetchProfileData(),
+          fetchFriendsCount(),
+          fetchPendingRequests(),
+        ]).catch((error) => console.error("Error refreshing profile:", error));
       }
+
+      return () => {
+        isMountedRef.current = false;
+      };
     }, [user?.id]),
   );
 
   useEffect(() => {
-    const loadImageUrls = async () => {
-      const urlMap = new Map<number, string>();
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-      for (const post of friendPosts) {
-        if (post.image_url) {
-          const signedUrl = await getSignedImageUrl(post.image_url);
-          if (signedUrl) {
-            urlMap.set(post.workout_post_id, signedUrl);
-          }
-        }
+  useEffect(() => {
+    const loadImageUrls = async () => {
+      if (friendPosts.length === 0) {
+        setImageUrls(new Map());
+        return;
       }
-      setImageUrls(urlMap);
+
+      try {
+        // Get all image URLs in parallel instead of sequentially
+        const imagesToFetch = friendPosts
+          .filter((post) => post.image_url)
+          .map((post) => post.image_url);
+
+        if (imagesToFetch.length === 0) {
+          setImageUrls(new Map());
+          return;
+        }
+
+        const urlMap = await getSignedImageUrls(
+          imagesToFetch,
+          STORAGE_BUCKETS.POST_IMAGES,
+        );
+
+        // Map URLs back to post IDs
+        const imageUrlMap = new Map<number, string>();
+        friendPosts.forEach((post, index) => {
+          if (post.image_url && urlMap.has(post.image_url)) {
+            const signedUrl = urlMap.get(post.image_url);
+            if (signedUrl) {
+              imageUrlMap.set(post.workout_post_id, signedUrl);
+            }
+          }
+        });
+
+        if (isMountedRef.current) {
+          setImageUrls(imageUrlMap);
+        }
+      } catch (error) {
+        console.error("Error loading image URLs:", error);
+      }
     };
 
-    if (friendPosts.length > 0) {
-      loadImageUrls();
-    }
+    loadImageUrls();
   }, [friendPosts]);
 
   const fetchProfileData = async () => {
@@ -97,7 +145,7 @@ export default function Profile() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("username")
+        .select("username, profile_image_url")
         .eq("id", user.id)
         .single();
 
@@ -106,7 +154,19 @@ export default function Profile() {
       setProfile({
         username: data.username || "User",
         name: data.username || "User",
+        profile_image_url: data.profile_image_url,
       });
+
+      // Fetch signed URL for profile image
+      if (data.profile_image_url) {
+        const signedUrl = await getSignedImageUrl(
+          data.profile_image_url,
+          STORAGE_BUCKETS.PROFILE_IMAGES,
+        );
+        if (signedUrl && isMountedRef.current) {
+          setProfileImageUrl(signedUrl);
+        }
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
@@ -274,38 +334,6 @@ export default function Profile() {
     }
   };
 
-  const getSignedImageUrl = async (
-    imagePath: string,
-  ): Promise<string | null> => {
-    if (!imagePath) return null;
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session?.access_token) return null;
-
-      // Extract path from full URL if needed
-      const path = imagePath.includes("post-images/")
-        ? imagePath.split("post-images/")[1]
-        : imagePath;
-
-      const { data, error } = await supabase.storage
-        .from("post-images")
-        .createSignedUrl(path, 3600); // 1 hour expiry
-
-      if (error) {
-        console.error("Error getting signed URL:", error);
-        return null;
-      }
-
-      return data?.signedUrl || null;
-    } catch (error) {
-      console.error("Error in getSignedImageUrl:", error);
-      return null;
-    }
-  };
-
   const handleLikePost = async (postId: number) => {
     // TO-DO: Implement like functionality
     setFriendPosts((prev) =>
@@ -314,8 +342,9 @@ export default function Profile() {
           ? {
               ...post,
               isLiked: !post.isLiked,
-              like_count:
-                post.isLiked ? post.like_count - 1 : post.like_count + 1,
+              like_count: post.isLiked
+                ? post.like_count - 1
+                : post.like_count + 1,
             }
           : post,
       ),
@@ -341,47 +370,70 @@ export default function Profile() {
     return "Just now";
   };
 
+  const renderProfilePicture = () => {
+    const initial = profile?.username?.[0]?.toUpperCase() || "U";
+
+    if (profileImageUrl) {
+      return (
+        <Image
+          source={{ uri: profileImageUrl }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            borderWidth: 2,
+            borderColor: "#FCDE8C",
+          }}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    // Fallback to initial letter
+    return (
+      <View
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          backgroundColor: "#FCDE8C",
+          borderWidth: 2,
+          borderColor: "#FCDE8C",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <P style={{ fontSize: 24, fontWeight: "700", color: "#2D3541" }}>
+          {initial}
+        </P>
+      </View>
+    );
+  };
+
   const height = Dimensions.get("screen").height * 0.5;
   const width = Dimensions.get("screen").width;
 
   return (
     <View className="flex-1 bg-white">
-      {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View
-        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
-      >
-        <Svg
-          height={Dimensions.get("screen").height * 0.5}
-          width={Dimensions.get("screen").width}
-        >
-          <Defs>
-            <RadialGradient
-              id="topSemiCircle"
-              cx="50%" //centered horizontally
-              cy="0%" //top edge
-              rx="150%" //horiztonal radius
-              ry="70%" //vertical radius
-              gradientUnits="objectBoundingBox"
-            >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-        </Svg>
-      </View>
+      <Gradient />
 
       <ScrollView
         className={`flex-1`}
         showsVerticalScrollIndicator={false}
         style={{ marginTop: height * 0.08, marginBottom: height * 0.3 }}
       >
-        {/* Header with Name and Settings */}
+        {/* Header with Profile Picture, Name and Settings */}
         <View className="flex-row justify-between items-center px-6 pt-16 pb-4">
+          {/* Profile Picture */}
+          <View className="mr-4">{renderProfilePicture()}</View>
+
+          {/* Name and greeting */}
           <View className="flex-1">
             <P>Hello {profile?.name || "User"}</P>
             <P style={{ fontWeight: "700" }}>Let&apos;s review your progress</P>
           </View>
+
+          {/* Settings Icon */}
           <TouchableOpacity onPress={() => router.push("/(tabs)/settings")}>
             <Feather name="settings" size={24} color="#32393d" />
           </TouchableOpacity>

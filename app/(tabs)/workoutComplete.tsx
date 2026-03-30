@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, ScrollView, View, Text } from "react-native";
+import { Animated, Dimensions, ScrollView, Text, View } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { Button, H2, P } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
@@ -124,11 +124,11 @@ export default function WorkoutComplete() {
       </View>
       <View className="px-4 py-20 flex-1">
         <View className="flex-1">
-          <H2 style={{ fontFamily: 'Inter_SemiBold' }}>
+          <H2 style={{ fontFamily: "Inter_SemiBold" }}>
             Congratulations {user?.username}, you finished your workout!
           </H2>
           <View className="gap-5 flex-1 mt-4">
-            <H2 style={{ fontFamily: 'Inter_SemiBold' }}>
+            <H2 style={{ fontFamily: "Inter_SemiBold" }}>
               Let's review your workout progress
             </H2>
             <ScrollView
@@ -147,7 +147,7 @@ export default function WorkoutComplete() {
                   className="flex flex-row gap-1 justify-start items-center"
                   style={{ transform: [{ translateY: slideAnim }] }}
                 >
-                  <P style={{ color: "#565656"}}>
+                  <P style={{ color: "#565656" }}>
                     Workout length:
                     <Text style={{ fontFamily: "Inter_SemiBold" }}>
                       {workoutHour > 0
@@ -176,7 +176,7 @@ export default function WorkoutComplete() {
                     Total weight lifted:
                     <Text style={{ fontFamily: "Inter_SemiBold" }}>
                       {` ${totalWeightLifted} lbs`}
-                    </Text> 
+                    </Text>
                   </P>
                 </Animated.View>
               </View>
@@ -191,7 +191,7 @@ export default function WorkoutComplete() {
                   style={{ transform: [{ translateY: slideAnim }] }}
                 >
                   <P style={{ color: "#565656" }}>
-                    Total sets: 
+                    Total sets:
                     <Text style={{ fontFamily: "Inter_SemiBold" }}>
                       {` ${totalSets}`}
                     </Text>
@@ -211,9 +211,9 @@ export default function WorkoutComplete() {
                     className="gap-5"
                   >
                     <P style={{ color: "#565656" }}>
-                      Reached 
+                      Reached
                       <Text style={{ fontFamily: "Inter_SemiBold" }}>
-                      {` ${numNewPRs} `}
+                        {` ${numNewPRs} `}
                       </Text>
                       new personal record
                       {numNewPRs > 1 ? "s" : ""}:
@@ -246,7 +246,7 @@ export default function WorkoutComplete() {
             />
           </Animated.View>
           <Button
-            title="Home"
+            title="Save and Return Home"
             color="black"
             fontColor="white"
             onPress={() => router.push("/(tabs)/landingMain")}

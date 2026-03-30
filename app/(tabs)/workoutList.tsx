@@ -2,9 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Dimensions, ScrollView, TouchableOpacity, View } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import WorkoutPreview from "../../components/WorkoutPreview";
 import { Button, H3, P } from "../../components/typography";
+import Gradient from "../../components/ui/Gradient";
+import WorkoutPreview from "../../components/ui/WorkoutPreview";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -87,6 +87,7 @@ export default function WorkoutList() {
     router.push({
       pathname: "/(tabs)/inWorkout",
       params: {
+        sessionId: Date.now().toString(),
         workoutId: workoutPlan.workout_id.toString(),
         workoutName: workoutPlan.workout_name,
         exercises: JSON.stringify(workoutPlan.exercises),
@@ -99,6 +100,7 @@ export default function WorkoutList() {
     router.push({
       pathname: "/(tabs)/inWorkout",
       params: {
+        sessionId: Date.now().toString(),
         workoutId: "new",
         isSavedWorkout: "false",
       },
@@ -119,30 +121,7 @@ export default function WorkoutList() {
 
   return (
     <View className="flex-1 bg-white">
-      {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View
-        style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}
-      >
-        <Svg
-          height={Dimensions.get("screen").height * 0.5}
-          width={Dimensions.get("screen").width}
-        >
-          <Defs>
-            <RadialGradient
-              id="topSemiCircle"
-              cx="50%" //centered horizontally
-              cy="0%" //top edge
-              rx="150%" //horiztonal radius
-              ry="70%" //vertical radius
-              gradientUnits="objectBoundingBox"
-            >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-        </Svg>
-      </View>
+      <Gradient />
 
       {/* Static Header Section */}
       <View className="mx-8">

@@ -1,6 +1,5 @@
 import React from "react";
 import { Dimensions, Image, Pressable, View } from "react-native";
-import { useExerciseLibrary } from "../../contexts/ExerciseLibraryContext";
 import { P } from "../typography";
 
 const muscleImages = {
@@ -25,7 +24,17 @@ export default function MuscleGroups({
   selectedGroups,
   setSelectedGroups,
 }: MuscleGroupsProps) {
-  const { muscleList, loading } = useExerciseLibrary();
+  const muscleList = [
+    "Abs",
+    "Chest",
+    "Back",
+    "Hamstrings",
+    "Quads",
+    "Calves",
+    "Shoulders",
+    "Biceps",
+    "Triceps",
+  ];
 
   const { width, height } = Dimensions.get("window");
   let boxWidth = (width - 100) / 3;
@@ -35,10 +44,6 @@ export default function MuscleGroups({
 
   const cssNotSelected = `bg-[#f2f0ef] border border-[#B1B0B0] rounded-lg items-center justify-center gap-2 py-2`;
   const cssSelected = `bg-[#FCDE8C] border border-[#FCDE8C] rounded-lg items-center justify-center gap-2 py-2`;
-
-  if (loading) {
-    return <P>Loading muscles...</P>;
-  }
 
   return (
     <View className="flex flex-row flex-wrap gap-4">

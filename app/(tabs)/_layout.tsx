@@ -1,9 +1,12 @@
-import TabBarBackground from "@/components/ui/TabBarBackground";
+//OVERVIEW: Has a list of all of the page in the app, and specifically handles showing the tab bar and
+// whether the page shows up on the tab bar or if the tab bar shows up on that page.
+
+import TabBarBackground from "@/components/TabBarBackground";
 import { Tabs } from "expo-router";
-import { Dumbbell, House, TrendingUp, UserRound } from "lucide-react-native";
+import { Dumbbell, House, UserRound } from "lucide-react-native";
 import React from "react";
 import { Dimensions, Platform } from "react-native";
-import TabBarItem from "../../components/ui/TabBarItem";
+import TabBarItem from "../../components/TabBarItem";
 
 const { width, height } = Dimensions.get("window");
 
@@ -33,6 +36,7 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* Screens list */}
       <Tabs.Screen
         name="landingMain"
         options={{
@@ -48,13 +52,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="stats"
-        options={{
-          title: "help",
-          tabBarIcon: ({ color }) => <TrendingUp color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
@@ -62,92 +59,98 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hidden screens - these won't appear in the tab bar */}
+      {/* Hidden screens */}
       <Tabs.Screen
         name="login"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null, // hides from the tab bar
+          tabBarStyle: { display: "none" }, // hides the tab bar on the screen
         }}
       />
       <Tabs.Screen
         name="signUp"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="welcome"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="exercisePreview"
         options={{
-          href: null, // This hides the tab
+          href: null,
         }}
       />
       <Tabs.Screen
         name="inWorkout"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="allExercises"
         options={{
-          href: null, // This hides the tab
+          href: null,
         }}
       />
       <Tabs.Screen
         name="index"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="workoutComplete"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="postWorkout"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          href: null, // This hides the tab
+          href: null,
         }}
       />
       <Tabs.Screen
         name="friendSearch"
         options={{
-          href: null, // This hides the tab
+          href: null,
         }}
       />
       <Tabs.Screen
         name="generateWorkout"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="generatedPreview"
         options={{
-          href: null, // This hides the tab
-          tabBarStyle: { display: "none" }, // This hides the entire tab bar on this screen
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="exploreCategories"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

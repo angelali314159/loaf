@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Button, H2, P } from "./typography";
+import { Button, P } from "../typography";
 
 interface PopupMessageProps {
   visible: boolean;
@@ -38,7 +38,6 @@ export default function PopupMessage({
   secondaryAction,
   textInput,
 }: PopupMessageProps) {
-
   return (
     <Modal
       visible={visible}
@@ -74,9 +73,7 @@ export default function PopupMessage({
               )}
               The figma doesn't have titles so this is commented out*/}
 
-              <P className={`black text-center my-4`}>
-                {message}
-              </P>
+              <P className={`black text-center my-4`}>{message}</P>
 
               {textInput && (
                 <TextInput

@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,9 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import ExerciseList from "../../components/ExerciseList";
-import PopupMessage from "../../components/PopupMessage";
+import ExerciseList from "../../components/ui/ExerciseList";
+import Gradient from "../../components/ui/Gradient";
+import PopupMessage from "../../components/ui/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { ExerciseLibraryProvider } from "../../contexts/ExerciseLibraryContext";
 import {
@@ -56,12 +55,15 @@ interface PRData {
 }
 
 type PopupType =
+  | "noExercises"
+  | "confirmExitWorkout"
   | "incomplete"
   | "emptyValues"
   | "error"
   | "updateWorkout"
   | "saveNewWorkout"
-  | "nameWorkout";
+  | "nameWorkout"
+  | "confirmDeleteExercise";
 
 function formatHMS(totalSeconds: number) {
   const h = Math.floor(totalSeconds / 3600);
@@ -176,6 +178,7 @@ function ConfettiAnimation({ onComplete }: { onComplete: () => void }) {
 
 function InWorkoutContent() {
   const params = useLocalSearchParams();
+  const sessionId = params.sessionId as string | undefined;
   const workoutId = params.workoutId as string;
   const workoutName = params.workoutName as string;
   const passedExercises = params.exercises as string;
@@ -222,6 +225,9 @@ function InWorkoutContent() {
   const [showPopup, setShowPopup] = useState(false);
   const [popupType, setPopupType] = useState<PopupType>("incomplete");
   const [newWorkoutName, setNewWorkoutName] = useState("");
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(
+    null,
+  );
 
   const selectedExercises = useMemo(
     () => exerciseBlocks.map((b) => b.exercise),
@@ -254,10 +260,24 @@ function InWorkoutContent() {
     };
   }, []);
 
-  // Load workout data
+  const resetWorkoutSessionState = () => {
+    setLoading(true);
+    setSeconds(0);
+    setAchievedPRs(new Map());
+    setExerciseBlocks([]);
+    setOriginalExerciseIds([]);
+    setHasWorkoutBeenModified(false);
+    setShowExerciseList(false);
+    setSaving(false);
+    setShowPopup(false);
+    setExerciseToDelete(null);
+  };
+
+  // Load workout data for each new workout session
   useEffect(() => {
+    resetWorkoutSessionState();
     loadWorkoutData();
-  }, [workoutId, passedExercises]);
+  }, [workoutId, passedExercises, sessionId]);
 
   const loadWorkoutData = async () => {
     if (workoutId === "new") {
@@ -375,6 +395,16 @@ function InWorkoutContent() {
 
   const handleAddExercises = () => setShowExerciseList(true);
 
+  const handleBackPress = () => {
+    setPopupType("confirmExitWorkout");
+    setShowPopup(true);
+  };
+
+  const handleConfirmExitWorkout = () => {
+    setShowPopup(false);
+    router.push("/workoutList");
+  };
+
   const handleSelectExercise = async (exercise: Exercise) => {
     // Check if exercise exists
     const exists = exerciseBlocks.some(
@@ -471,6 +501,12 @@ function InWorkoutContent() {
     });
   };
 
+  const requestRemoveExercise = (exercise: Exercise) => {
+    setExerciseToDelete(exercise);
+    setPopupType("confirmDeleteExercise");
+    setShowPopup(true);
+  };
+
   const addSetRow = (exerciseId: number) => {
     setExerciseBlocks((prev) =>
       prev.map((b) => {
@@ -495,6 +531,7 @@ function InWorkoutContent() {
     setExerciseBlocks((prev) =>
       prev.map((b) => {
         if (b.exercise.exercise_lib_id !== exerciseId) return b;
+        if (b.sets.length <= 1) return b;
         const kept = b.sets.filter((r) => r.setNumber !== setNumber);
         const renumbered = kept.map((r, idx) => ({ ...r, setNumber: idx + 1 }));
         return { ...b, sets: renumbered };
@@ -879,6 +916,12 @@ function InWorkoutContent() {
   };
 
   const handleFinishWorkout = async () => {
+    if (exerciseBlocks.length === 0) {
+      setPopupType("noExercises");
+      setShowPopup(true);
+      return;
+    }
+
     const allSetsCompleted = exerciseBlocks.every((block) =>
       block.sets.every((set) => set.done),
     );
@@ -1017,10 +1060,44 @@ function InWorkoutContent() {
       } else if (action === "discard") {
         await completeWorkout("discard");
       }
+    } else if (popupType === "confirmDeleteExercise") {
+      if (action === "delete" && exerciseToDelete) {
+        handleRemoveExercise(exerciseToDelete);
+      }
+      setExerciseToDelete(null);
     }
   };
 
   const renderPopup = () => {
+    if (popupType === "confirmExitWorkout") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="End Workout"
+          message="Are you sure you want to end and delete this workout?"
+          type="error"
+          confirmText="Stay"
+          onClose={() => setShowPopup(false)}
+          secondaryAction={{
+            text: "End Workout",
+            onPress: handleConfirmExitWorkout,
+          }}
+        />
+      );
+    }
+
+    if (popupType === "noExercises") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="No Exercises"
+          message="There's no exercises in here!"
+          type="error"
+          onClose={() => setShowPopup(false)}
+        />
+      );
+    }
+
     if (popupType === "incomplete") {
       return (
         <PopupMessage
@@ -1113,6 +1190,23 @@ function InWorkoutContent() {
       );
     }
 
+    if (popupType === "confirmDeleteExercise") {
+      return (
+        <PopupMessage
+          visible={showPopup}
+          title="Remove Exercise"
+          message={`Are you sure you want to remove ${exerciseToDelete?.name || "this exercise"} from the workout?`}
+          type="error"
+          confirmText="Cancel"
+          onClose={() => handlePopupAction("cancel")}
+          secondaryAction={{
+            text: "Delete",
+            onPress: () => handlePopupAction("delete"),
+          }}
+        />
+      );
+    }
+
     return null;
   };
 
@@ -1133,31 +1227,7 @@ function InWorkoutContent() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       className="flex-1 bg-white"
     >
-      {/* SEMICIRCLE GRADIENT BACKGROUND */}
-      <View
-        pointerEvents="none"
-        style={{ position: "absolute", top: 0, left: 0, right: 0 }}
-      >
-        <Svg
-          height={Dimensions.get("screen").height * 0.5}
-          width={Dimensions.get("screen").width}
-        >
-          <Defs>
-            <RadialGradient
-              id="topSemiCircle"
-              cx="50%"
-              cy="0%"
-              rx="150%"
-              ry="70%"
-              gradientUnits="objectBoundingBox"
-            >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-        </Svg>
-      </View>
+      <Gradient />
 
       <ScrollView
         className="flex-1"
@@ -1169,10 +1239,7 @@ function InWorkoutContent() {
           {/* Header */}
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1 mr-2">
-              <TouchableOpacity
-                onPress={() => router.back()}
-                className="pr-3 py-2"
-              >
+              <TouchableOpacity onPress={handleBackPress} className="pr-3 py-2">
                 <Feather name="chevron-left" size={26} color="#32393d" />
               </TouchableOpacity>
 
@@ -1291,15 +1358,25 @@ function InWorkoutContent() {
                         {block.exercise.name}
                       </Text>
 
-                      <TouchableOpacity
-                        onPress={() =>
-                          addSetRow(block.exercise.exercise_lib_id)
-                        }
-                        className="p-2"
-                        activeOpacity={0.7}
-                      >
-                        <Feather name="plus" size={28} color="#F6B83B" />
-                      </TouchableOpacity>
+                      <View className="flex-row items-center">
+                        <TouchableOpacity
+                          onPress={() => requestRemoveExercise(block.exercise)}
+                          className="p-2"
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="minus" size={28} color="#6A6A6A" />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={() =>
+                            addSetRow(block.exercise.exercise_lib_id)
+                          }
+                          className="p-2"
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="plus" size={28} color="#F6B83B" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
 
                     {/* Table header */}
@@ -1487,8 +1564,15 @@ function InWorkoutContent() {
                               )
                             }
                             activeOpacity={0.6}
+                            disabled={block.sets.length <= 1}
                           >
-                            <Feather name="minus" size={26} color="#6A6A6A" />
+                            <Feather
+                              name="minus"
+                              size={26}
+                              color={
+                                block.sets.length <= 1 ? "#B9B9B9" : "#6A6A6A"
+                              }
+                            />
                           </TouchableOpacity>
                         </View>
                       </View>

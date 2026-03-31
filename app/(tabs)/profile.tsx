@@ -38,6 +38,7 @@ interface FriendPost {
   workout_post_id: number;
   profile_id: string;
   username: string;
+  taggedUsernames: string[];
   image_url: string;
   description: string;
   created_at: string;
@@ -472,6 +473,11 @@ export default function Profile() {
                     <P className="text-[#32393d] font-semibold">
                       {post.username}
                     </P>
+                    {post.taggedUsernames.length > 0 && (
+                      <P className="text-[#565656] text-xs mt-1">
+                        with {post.taggedUsernames.map((name) => `@${name}`).join(", ")}
+                      </P>
+                    )}
                     <P className="text-[#565656] text-xs">
                       {formatTimeAgo(post.created_at)}
                     </P>

@@ -1,6 +1,6 @@
 import Equipment from "@/components/ui/Equipment";
 import Gradient from "@/components/ui/Gradient";
-import MuscleGroups from "@/components/ui/MuscleGroups";
+import MuscleGroups from "../../components/ui/MuscleGroups";
 import { ExerciseLibraryProvider } from "@/contexts/ExerciseLibraryContext";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";

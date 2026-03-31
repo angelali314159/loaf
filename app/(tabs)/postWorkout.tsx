@@ -99,7 +99,7 @@ export default function PostWorkout() {
           },
           {
             label: "Exercises",
-            value: `${data.exercises} exercises`,
+            value: `${data.exercises}`,
             visible: true,
             icon: "dumbbell",
           },

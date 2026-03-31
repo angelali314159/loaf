@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
   Image,
   ScrollView,
@@ -42,7 +43,7 @@ interface FriendPost {
   description: string;
   created_at: string;
   visible_stats: VisibleStat[];
-  like_count: number;
+  like_user_list: string[];
   isLiked: boolean;
 }
 
@@ -57,28 +58,25 @@ export default function Profile() {
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const [isLeaguePopupVisible, setIsLeaguePopupVisible] = useState(false);
+  const [fireEmojis, setFireEmojis] = useState<any[]>([]);
   const isMountedRef = useRef(true);
   const screenWidth = Dimensions.get("window").width;
+  const screenHeight = Dimensions.get("window").height;
 
   useEffect(() => {
     if (user?.id) {
-      fetchProfileData();
-      fetchStreak();
-      fetchFriendsCount();
-      fetchFriendPosts();
-      fetchPendingRequests();
+      fetchAllProfileData();
     }
   }, [user?.id]);
 
   useFocusEffect(
     React.useCallback(() => {
+      isMountedRef.current = true;
+
       if (user?.id) {
-        // Run all fetches in parallel instead of sequentially
-        Promise.all([
-          fetchProfileData(),
-          fetchFriendsCount(),
-          fetchPendingRequests(),
-        ]).catch((error) => console.error("Error refreshing profile:", error));
+        fetchAllProfileData().catch((error) =>
+          console.error("Error refreshing profile:", error),
+        );
       }
 
       return () => {
@@ -139,28 +137,56 @@ export default function Profile() {
     loadImageUrls();
   }, [friendPosts]);
 
-  const fetchProfileData = async () => {
+  const fetchAllProfileData = async () => {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("username, profile_image_url")
-        .eq("id", user.id)
-        .single();
+      setLoading(true);
+      const { data, error } = await supabase.rpc("get_profile_page_data", {
+        p_profile_id: user.id,
+      });
 
       if (error) throw error;
 
+      if (!isMountedRef.current) return;
+
+      // Set profile data
+      const profileData = data.profile;
       setProfile({
-        username: data.username || "User",
-        name: data.username || "User",
-        profile_image_url: data.profile_image_url,
+        username: profileData.username || "User",
+        name: profileData.username || "User",
+        profile_image_url: profileData.profile_image_url,
       });
 
-      // Fetch signed URL for profile image
-      if (data.profile_image_url) {
+      // Set streak
+      setStreak(data.streak || 0);
+
+      // Set friends count
+      setFriendsCount(data.friend_count || 0);
+
+      // Set pending requests
+      setHasPendingRequests(data.has_pending_requests || false);
+
+      // Format and set friend posts
+      const formattedPosts: FriendPost[] = (data.posts || []).map(
+        (post: any) => ({
+          workout_post_id: post.workout_post_id,
+          profile_id: post.profile_id,
+          username: post.username,
+          image_url: post.image_url || "",
+          description: post.description || "",
+          created_at: post.created_at,
+          visible_stats: post.visible_stats || [],
+          like_user_list: post.like_user_list || [],
+          isLiked: (post.like_user_list || []).includes(user.id),
+        }),
+      );
+      setFriendPosts(formattedPosts);
+
+      // Fetch signed URLs for profile image
+      if (profileData.profile_image_url) {
         const signedUrl = await getSignedImageUrl(
-          data.profile_image_url,
+          profileData.profile_image_url,
           STORAGE_BUCKETS.PROFILE_IMAGES,
         );
         if (signedUrl && isMountedRef.current) {
@@ -168,187 +194,97 @@ export default function Profile() {
         }
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
-    }
-  };
-
-  const fetchStreak = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase.rpc("get_workout_streak", {
-        p_profile_id: user.id,
-      });
-
-      if (error) throw error;
-      setStreak(data || 0);
-    } catch (error) {
-      console.error("Error fetching streak:", error);
-    }
-  };
-
-  const fetchFriendsCount = async () => {
-    if (!user?.id) return;
-
-    try {
-      // Count friendships where user is either user_id or friend_id
-      const { data, error } = await supabase
-        .from("friends")
-        .select("user_id, friend_id")
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
-
-      if (error) throw error;
-
-      // Count unique friendships (using min_id and max_id to avoid duplicates)
-      const uniqueFriends = new Set(
-        data?.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id)) ||
-          [],
-      );
-      setFriendsCount(uniqueFriends.size);
-    } catch (error) {
-      console.error("Error fetching friends count:", error);
-    }
-  };
-
-  const fetchFriendPosts = async () => {
-    if (!user?.id) return;
-
-    try {
-      setLoading(true);
-
-      // Get friend IDs
-      const { data: friends, error: friendsError } = await supabase
-        .from("friends")
-        .select("friend_id")
-        .eq("user_id", user.id);
-
-      if (friendsError) throw friendsError;
-
-      const friendIds = friends?.map((f) => f.friend_id) || [];
-
-      // Include user's own ID in the list
-      const userIdsToFetch = [...friendIds, user.id];
-
-      if (userIdsToFetch.length === 0) {
-        setFriendPosts([]);
-        setLoading(false);
-        return;
-      }
-
-      // Get posts from friends and user
-      const { data: posts, error: postsError } = await supabase
-        .from("workout_posts")
-        .select(
-          `
-          workout_post_id,
-          profile_id,
-          image_url,
-          description,
-          created_at,
-          visible_stats,
-          like_count,
-          tagged_friends,
-          profiles!inner(username)
-        `,
-        )
-        .in("profile_id", userIdsToFetch)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (postsError) {
-        console.error("Posts error:", postsError);
-        throw postsError;
-      }
-
-      console.log("Fetched posts:", posts); // Debug log
-
-      const allTaggedIds = Array.from(
-        new Set(
-          (posts || []).flatMap((post: any) =>
-            Array.isArray(post.tagged_friends) ? post.tagged_friends : [],
-          ),
-        ),
-      );
-
-      const usernamesById = new Map<string, string>();
-
-      if (allTaggedIds.length > 0) {
-        const { data: taggedProfiles, error: taggedProfilesError } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", allTaggedIds);
-
-        if (taggedProfilesError) {
-          console.error("Error fetching tagged usernames:", taggedProfilesError);
-        } else {
-          (taggedProfiles || []).forEach((profile: any) => {
-            usernamesById.set(profile.id, profile.username);
-          });
-        }
-      }
-
-      // Format posts data
-      const formattedPosts: FriendPost[] = (posts || []).map((post) => {
-        const tagIdsFromColumn = Array.isArray(post.tagged_friends)
-          ? post.tagged_friends
-          : [];
-
-        return {
-          workout_post_id: post.workout_post_id,
-          profile_id: post.profile_id,
-          username: (post.profiles as any).username,
-          taggedUsernames: tagIdsFromColumn
-            .map((tagId) => usernamesById.get(tagId))
-            .filter((username): username is string => Boolean(username)),
-          image_url: post.image_url || "",
-          description: post.description || "",
-          created_at: post.created_at,
-          visible_stats: post.visible_stats || [],
-          like_count: post.like_count || 0,
-          isLiked: false,
-        };
-      });
-
-      setFriendPosts(formattedPosts);
-    } catch (error) {
-      console.error("Error fetching friend posts:", error);
+      console.error("Error fetching profile data:", error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPendingRequests = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("friend_requests")
-        .select("friend_request_id")
-        .eq("receiver_id", user.id)
-        .limit(1);
-
-      if (error) throw error;
-      setHasPendingRequests((data?.length || 0) > 0);
-    } catch (error) {
-      console.error("Error fetching pending requests:", error);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   const handleLikePost = async (postId: number) => {
-    // TO-DO: Implement like functionality
+    if (!user?.id) return;
+
+    // Update local state optimistically
     setFriendPosts((prev) =>
       prev.map((post) =>
         post.workout_post_id === postId
           ? {
               ...post,
               isLiked: !post.isLiked,
-              like_count: post.isLiked
-                ? post.like_count - 1
-                : post.like_count + 1,
+              like_user_list: post.isLiked
+                ? post.like_user_list.filter((id) => id !== user.id)
+                : [...post.like_user_list, user.id],
             }
           : post,
       ),
     );
+
+    // Update backend
+    try {
+      const post = friendPosts.find((p) => p.workout_post_id === postId);
+      if (!post) return;
+
+      const updatedLikeList = post.isLiked
+        ? post.like_user_list.filter((id) => id !== user.id)
+        : [...post.like_user_list, user.id];
+
+      const { error } = await supabase
+        .from("workout_posts")
+        .update({ like_user_list: updatedLikeList })
+        .eq("workout_post_id", postId);
+
+      if (error) {
+        console.error("Error updating like:", error);
+        // Revert optimistic update on error
+        setFriendPosts((prev) =>
+          prev.map((p) =>
+            p.workout_post_id === postId
+              ? {
+                  ...p,
+                  isLiked: !p.isLiked,
+                  like_user_list: p.isLiked
+                    ? [...p.like_user_list, user.id]
+                    : p.like_user_list.filter((id) => id !== user.id),
+                }
+              : p,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Error updating like:", error);
+    }
+  };
+
+  const triggerFireRain = () => {
+    const emojis = [];
+    const emojiCount = 15;
+
+    for (let i = 0; i < emojiCount; i++) {
+      const animatedValue = new Animated.Value(0);
+      const randomDelay = Math.random() * 200;
+      const randomHorizontalOffset = Math.random() * screenWidth;
+
+      Animated.sequence([
+        Animated.delay(randomDelay),
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Remove emoji after animation completes
+        setFireEmojis((prev) => prev.filter((e) => e.id !== i));
+      });
+
+      emojis.push({
+        id: i,
+        animatedValue,
+        x: randomHorizontalOffset,
+      });
+    }
+
+    setFireEmojis(emojis);
   };
 
   const formatDuration = (seconds: number) => {
@@ -417,6 +353,33 @@ export default function Profile() {
     <View className="flex-1 bg-white">
       <Gradient />
 
+      {/* Fire Emoji Rain */}
+      {fireEmojis.map((emoji) => (
+        <Animated.View
+          key={emoji.id}
+          style={{
+            position: "absolute",
+            left: emoji.x,
+            top: 0,
+            zIndex: 1000,
+            transform: [
+              {
+                translateY: emoji.animatedValue.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, screenHeight],
+                }),
+              },
+            ],
+            opacity: emoji.animatedValue.interpolate({
+              inputRange: [0, 0.8, 1],
+              outputRange: [1, 1, 0],
+            }),
+          }}
+        >
+          <P style={{ fontSize: 40 }}>🔥</P>
+        </Animated.View>
+      ))}
+
       <ScrollView
         className={`flex-1`}
         showsVerticalScrollIndicator={false}
@@ -445,12 +408,15 @@ export default function Profile() {
           style={{ marginTop: height * 0.04 }}
         >
           {/* Streak */}
-          <View className="flex-1 items-center">
+          <TouchableOpacity
+            className="flex-1 items-center"
+            onPress={triggerFireRain}
+          >
             <H4 baseSize={9}>Streak</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
               {streak} week{streak !== 1 ? "s" : ""}
             </H4>
-          </View>
+          </TouchableOpacity>
           <View className="w-px bg-[#B1B0B0] mx-2" />
 
           {/* League */}
@@ -567,7 +533,7 @@ export default function Profile() {
                   >
                     <Image
                       source={
-                        post.isLiked
+                        post.like_user_list.includes(user?.id || "")
                           ? require("../../assets/images/paw-filled.png")
                           : require("../../assets/images/paw-outline.png")
                       }
@@ -576,7 +542,9 @@ export default function Profile() {
                     />
                   </TouchableOpacity>
                   {post.profile_id === user?.id && (
-                    <P className="text-[#565656] mr-2">{post.like_count}</P>
+                    <P className="text-[#565656] mr-2">
+                      {post.like_user_list.length}
+                    </P>
                   )}
                 </View>
 

@@ -1,7 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import { useFocusEffect } from "@react-navigation/native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Dimensions,
@@ -11,7 +10,7 @@ import {
   View,
 } from "react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { H4, P } from "../../components/typography";
+import { Button, H4, P } from "../../components/typography";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -38,6 +37,27 @@ interface FriendPost {
   isLiked: boolean;
 }
 
+interface WorkoutStat {
+  label: string;
+  value: string;
+  visible: boolean;
+  icon: string;
+}
+
+interface WorkoutData {
+  workoutName: string;
+  duration: number;
+  exercises: number;
+  sets: number;
+  totalReps: number;
+  weightLifted: number;
+  prs?: number;
+  workoutHistoryId?: string;
+}
+
+      // Prepare workout stats for storage
+
+
 export default function Profile() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -46,8 +66,80 @@ export default function Profile() {
   const [friendPosts, setFriendPosts] = useState<FriendPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [imageUrls, setImageUrls] = useState<Map<number, string>>(new Map());
-  const [hasPendingRequests, setHasPendingRequests] = useState(false);
+  const params = useLocalSearchParams();
+  const workoutDataParam = params.workoutData as string;
+  
   const screenWidth = Dimensions.get("window").width;
+
+  const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
+  const [stats, setStats] = useState<WorkoutStat[]>([]);
+
+  useEffect(() => {
+    if (workoutDataParam) {
+      try {
+        const data: WorkoutData = JSON.parse(workoutDataParam);
+        setWorkoutData(data);
+        console.log("Exercises check:", data.exercises);
+        const hours = Math.floor(data.duration / 3600);
+        const minutes = Math.floor((data.duration % 3600) / 60);
+        const durationStr =
+          hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`;
+
+        let prsCount = 0;
+        if (data.prs) {
+          const prsArray =
+            typeof data.prs === "string" ? JSON.parse(data.prs) : data.prs;
+          prsCount = Array.isArray(prsArray) ? prsArray.length : 0;
+        }
+        setStats([
+          {
+            label: "Duration",
+            value: durationStr,
+            visible: true,
+            icon: "clock",
+          },
+          {
+            label: "Exercises",
+            value: `${data.exercises}`,
+            
+            visible: true,
+            icon: "dumbbell",
+          },
+          {
+            label: "Weight Lifted",
+            value: `${data.weightLifted.toLocaleString()}`,
+            visible: true,
+            icon: "weight-hanging",
+          },
+          {
+            label: "PRs",
+            value: `${prsCount} PRs`,
+            visible: prsCount > 0,
+            icon: "award",
+          },
+        ]);
+      } catch (error) {
+        console.error("Error parsing workout data:", error);
+      }
+    }
+  }, [workoutDataParam]);
+
+  const visibleStats = stats
+    .filter((stat) => stat.visible)
+    .map((stat) => ({
+      label: stat.label,
+      value: stat.value,
+      icon: stat.icon,
+  }));
+  
+  const workoutStats = workoutData ? {
+  duration: workoutData.duration,
+  exercises: workoutData.exercises,
+  sets: workoutData.sets,
+  totalReps: workoutData.totalReps,
+  weightLifted: workoutData.weightLifted,
+  prs: workoutData.prs || 0,
+  } : null;
 
   useEffect(() => {
     if (user?.id) {
@@ -55,18 +147,8 @@ export default function Profile() {
       fetchStreak();
       fetchFriendsCount();
       fetchFriendPosts();
-      fetchPendingRequests();
     }
   }, [user]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      if (user?.id) {
-        fetchFriendsCount();
-        fetchPendingRequests();
-      }
-    }, [user?.id]),
-  );
 
   useEffect(() => {
     const loadImageUrls = async () => {
@@ -113,12 +195,9 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase.rpc("get_workout_streak", {
-        p_profile_id: user.id,
-      });
-
-      if (error) throw error;
-      setStreak(data || 0);
+      // TO-DO: Implement streak calculation based on workout_history
+      // For now, using mock data
+      setStreak(7);
     } catch (error) {
       console.error("Error fetching streak:", error);
     }
@@ -128,20 +207,13 @@ export default function Profile() {
     if (!user?.id) return;
 
     try {
-      // Count friendships where user is either user_id or friend_id
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from("friends")
-        .select("user_id, friend_id")
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
 
       if (error) throw error;
-
-      // Count unique friendships (using min_id and max_id to avoid duplicates)
-      const uniqueFriends = new Set(
-        data?.map((f) => (f.user_id === user.id ? f.friend_id : f.user_id)) ||
-          [],
-      );
-      setFriendsCount(uniqueFriends.size);
+      setFriendsCount(count || 0);
     } catch (error) {
       console.error("Error fetching friends count:", error);
     }
@@ -219,23 +291,6 @@ export default function Profile() {
     }
   };
 
-  const fetchPendingRequests = async () => {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("friend_requests")
-        .select("friend_request_id")
-        .eq("receiver_id", user.id)
-        .limit(1);
-
-      if (error) throw error;
-      setHasPendingRequests((data?.length || 0) > 0);
-    } catch (error) {
-      console.error("Error fetching pending requests:", error);
-    }
-  };
-
   const getSignedImageUrl = async (
     imagePath: string,
   ): Promise<string | null> => {
@@ -266,6 +321,12 @@ export default function Profile() {
       console.error("Error in getSignedImageUrl:", error);
       return null;
     }
+  };
+
+  const toggleStatVisibility = (index: number) => {
+    const updatedStats = [...stats];
+    updatedStats[index].visible = !updatedStats[index].visible;
+    setStats(updatedStats);
   };
 
   const handleLikePost = async (postId: number) => {
@@ -357,7 +418,7 @@ export default function Profile() {
           <View className="flex-1 items-center">
             <H4 baseSize={9}>Streak</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
-              {streak} week{streak !== 1 ? "s" : ""}
+              10 weeks
             </H4>
           </View>
           <View className="w-px bg-[#B1B0B0] mx-2" />
@@ -376,16 +437,42 @@ export default function Profile() {
             className="flex-1 items-center"
             onPress={() => router.push("/(tabs)/friendSearch")}
           >
-            <View className="flex-row items-center justify-center gap-1">
-              <H4 baseSize={9}>Friends</H4>
-              {hasPendingRequests && (
-                <View className="w-2 h-2 rounded-full bg-[#FCDE8C]" />
-              )}
-            </View>
+            <H4 baseSize={9}>Friends</H4>
             <H4 className="mt-2" style={{ fontWeight: "700" }}>
               {friendsCount}
             </H4>
           </TouchableOpacity>
+        </View>
+
+        {/*Date Range Selector*/}
+        <View style={{ flexDirection:"row", paddingHorizontal:28, marginTop:30}}>
+          <Button style={{ marginRight:12 }}
+            title= {"All Time"}
+            color="yellow"
+            width="30%" 
+            height= {10}
+            fontColor="blue"
+            fontSize={12}
+            onPress={function (): void {}}
+          />
+          <Button style={{ marginRight:12 }}
+            title="This Week"
+            color="blue"
+            width="30%" 
+            height="5%"
+            fontColor="white"
+            fontSize={12}
+            onPress={function (): void {}}
+          />
+          <Button
+            title="This Month"
+            color="blue"
+            width="30%" 
+            height="5%"
+            fontColor="white"
+            fontSize={12}
+            onPress={function (): void {}}
+          />
         </View>
 
         {/* Friends' Posts Feed */}
@@ -403,9 +490,8 @@ export default function Profile() {
             </View>
           ) : (
             friendPosts.map((post) => (
-              <View
+              <><View
                 key={post.workout_post_id}
-                className="mb-6 bg-white rounded-2xl shadow-sm border border-[#DADADA]"
               >
                 {/* Post Header */}
                 <View className="flex-row items-center p-4 pb-2">
@@ -424,8 +510,7 @@ export default function Profile() {
                   <Image
                     source={{ uri: imageUrls.get(post.workout_post_id) }}
                     style={{ width: "100%", height: screenWidth - 48 }}
-                    resizeMode="cover"
-                  />
+                    resizeMode="cover" />
                 ) : post.image_url ? (
                   <View
                     style={{ width: "100%", height: screenWidth - 48 }}
@@ -443,51 +528,60 @@ export default function Profile() {
                 )}
 
                 {/* Stats Icons with Like Button */}
-                <View className="flex-row items-center py-3 px-4 border-b border-[#DADADA]">
-                  {/* Stats - left aligned */}
-                  <View className="flex-row flex-1 justify-around">
-                    {post.visible_stats &&
-                      post.visible_stats.map((stat, index) => (
-                        <View key={index} className="items-center">
-                          <FontAwesome5
-                            name={stat.icon}
-                            size={20}
-                            color="#32393d"
-                          />
+                <View className="flex-row items-left p-4 pt-2" style={{ marginHorizontal: -15}}>
+                  <View className="flex-row flex-1 justify-around" style={{ justifyContent: "flex-start"}}>
+                    {post.visible_stats && post.visible_stats.map((stat, index) => (
+                      <View key={index} className="items-left">
+                        <TouchableOpacity
+                        onPress={function (): void {}}
+                        style={{
+                          backgroundColor: "#fffefe",
+                          paddingHorizontal: 10,
+                          paddingVertical: 2,
+                          borderRadius: 20,
+                          borderColor: "#3c3f42",
+                          borderWidth: 1,
+                          flexDirection: "row",
+                          gap: 8,
+                        }}
+                        >
+                        <FontAwesome5
+                          name={stat.icon}
+                          size={15}
+                          color="#32393d"/>
                           <P className="text-xs text-[#565656] mt-1">
                             {stat.value}
                           </P>
-                        </View>
+                      </TouchableOpacity>
+                      </View>
                       ))}
                   </View>
 
-                  {/* Like button */}
-                  <TouchableOpacity
-                    onPress={() => handleLikePost(post.workout_post_id)}
-                    className="flex-row items-center ml-4"
-                  >
-                    <Image
-                      source={
-                        post.isLiked
-                          ? require("../../assets/images/paw-filled.png")
-                          : require("../../assets/images/paw-outline.png")
-                      }
-                      style={{ width: 24, height: 24 }}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                  {post.profile_id === user?.id && (
-                    <P className="text-[#565656] mr-2">{post.like_count}</P>
-                  )}
-                </View>
-
+                {/* Like button */}
+                <TouchableOpacity
+                  onPress={() => handleLikePost(post.workout_post_id)}
+                  className="flex-row items-center ml-4"
+                >
+                  <Image
+                    source={post.isLiked
+                      ? require("../../assets/images/paw-filled.png")
+                      : require("../../assets/images/paw-outline.png")}
+                    style={{ width: 24, height: 24 }}
+                    resizeMode="contain" />
+                </TouchableOpacity>
+                {post.profile_id === user?.id && (
+                  <P className="text-[#565656] mr-2">{post.like_count}</P>
+                )}
+              </View>
+              </View>
+              <View>
                 {/* Caption */}
                 {post.description && (
                   <View className="p-4">
                     <P className="text-[#32393d]">{post.description}</P>
                   </View>
                 )}
-              </View>
+              </View></>
             ))
           )}
         </View>

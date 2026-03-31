@@ -203,59 +203,60 @@ export default function Profile() {
     }
   };
 
-  const handleLikePost = async (postId: number) => {
-    if (!user?.id) return;
-
-    // Update local state optimistically
-    setFriendPosts((prev) =>
-      prev.map((post) =>
-        post.workout_post_id === postId
-          ? {
-              ...post,
-              isLiked: !post.isLiked,
-              like_user_list: post.isLiked
-                ? post.like_user_list.filter((id) => id !== user.id)
-                : [...post.like_user_list, user.id],
-            }
-          : post,
-      ),
-    );
-
-    // Update backend
-    try {
-      const post = friendPosts.find((p) => p.workout_post_id === postId);
-      if (!post) return;
-
-      const updatedLikeList = post.isLiked
-        ? post.like_user_list.filter((id) => id !== user.id)
-        : [...post.like_user_list, user.id];
-
-      const { error } = await supabase
-        .from("workout_posts")
-        .update({ like_user_list: updatedLikeList })
-        .eq("workout_post_id", postId);
-
-      if (error) {
-        console.error("Error updating like:", error);
-        // Revert optimistic update on error
-        setFriendPosts((prev) =>
-          prev.map((p) =>
-            p.workout_post_id === postId
-              ? {
-                  ...p,
-                  isLiked: !p.isLiked,
-                  like_user_list: p.isLiked
-                    ? [...p.like_user_list, user.id]
-                    : p.like_user_list.filter((id) => id !== user.id),
-                }
-              : p,
-          ),
-        );
-      }
-    } catch (error) {
-      console.error("Error updating like:", error);
-    }
-  };
+  // TODO: Implement like button functionality
+  // const handleLikePost = async (postId: number) => {
+  //   if (!user?.id) return;
+  //
+  //   // Update local state optimistically
+  //   setFriendPosts((prev) =>
+  //     prev.map((post) =>
+  //       post.workout_post_id === postId
+  //         ? {
+  //             ...post,
+  //             isLiked: !post.isLiked,
+  //             like_user_list: post.isLiked
+  //               ? post.like_user_list.filter((id) => id !== user.id)
+  //               : [...post.like_user_list, user.id],
+  //           }
+  //         : post,
+  //     ),
+  //   );
+  //
+  //   // Update backend
+  //   try {
+  //     const post = friendPosts.find((p) => p.workout_post_id === postId);
+  //     if (!post) return;
+  //
+  //     const updatedLikeList = post.isLiked
+  //       ? post.like_user_list.filter((id) => id !== user.id)
+  //       : [...post.like_user_list, user.id];
+  //
+  //     const { error } = await supabase
+  //       .from("workout_posts")
+  //       .update({ like_user_list: updatedLikeList })
+  //       .eq("workout_post_id", postId);
+  //
+  //     if (error) {
+  //       console.error("Error updating like:", error);
+  //       // Revert optimistic update on error
+  //       setFriendPosts((prev) =>
+  //         prev.map((p) =>
+  //           p.workout_post_id === postId
+  //             ? {
+  //                 ...p,
+  //                 isLiked: !p.isLiked,
+  //                 like_user_list: p.isLiked
+  //                   ? [...p.like_user_list, user.id]
+  //                   : p.like_user_list.filter((id) => id !== user.id),
+  //               }
+  //             : p,
+  //         ),
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating like:", error);
+  //   }
+  // };
 
   const triggerFireRain = () => {
     const emojis = [];
@@ -530,9 +531,9 @@ export default function Profile() {
                       ))}
                   </View>
 
-                  {/* Like button */}
+                  {/* Like button - TODO: Re-enable handleLikePost when ready */}
                   <TouchableOpacity
-                    onPress={() => handleLikePost(post.workout_post_id)}
+                    // onPress={() => handleLikePost(post.workout_post_id)}
                     className="flex-row items-center ml-4"
                   >
                     <Image

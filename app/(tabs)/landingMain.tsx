@@ -1,16 +1,11 @@
-import { BlurView } from "expo-blur";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  Image,
-  Pressable,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View
-} from "react-native";
-import { H1, H2, P } from "../../components/typography";
-import Gradient from "../../components/ui/Gradient";
+import { BlurView } from 'expo-blur';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { H1, H2, P } from '../../components/typography';
+import { supabase } from "../../utils/supabase";
+
 
 interface Exercise {
   name: string;
@@ -23,6 +18,12 @@ interface Exercise {
 interface WorkoutPlan {
   name: string;
   exercises: string[];
+}
+
+interface Profile {
+  username: string;
+  name: string;
+  profile_image_url?: string;
 }
 
 const generateWeek = () => {
@@ -60,30 +61,128 @@ const generateWeek = () => {
   return week;
 };
 
-export default function LandingMain() {
-  const { username = "Joooy" } = useLocalSearchParams<{ username?: string }>();
-  const [savedExercises, setSavedExercises] = useState<WorkoutPlan[]>([]);
-  const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
 
-  //Week Generated
+export default function LandingMain() {
+  const { username } = useLocalSearchParams<{ username?: string }>();
+  const [savedExercises, setSavedExercises] = useState<WorkoutPlan[]>([]);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  // Fix 1: define isMountedRef
+  const isMountedRef = useRef(true);
+
   const week = useMemo(() => generateWeek(), []);
 
   const mockWorkoutPlans: WorkoutPlan[] = [
-    {
-      name: "Upper Body Blast",
-      exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"],
-    },
+    { name: "Upper Body Blast", exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"] },
     { name: "Leg Day", exercises: ["Squats", "Lunges", "Calf Raises"] },
-    {
-      name: "Core Focus",
-      exercises: ["Planks", "Russian Twists", "Leg Raises"],
-    },
+    { name: "Core Focus", exercises: ["Planks", "Russian Twists", "Leg Raises"] }
   ];
 
+  // Fix 2: cleanup isMountedRef on unmount
   useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchProfileData = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, profile_image_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      setProfile({
+        username: data.username || "User",
+        name: data.username || "User",
+        profile_image_url: data.profile_image_url,
+      });
+
+      // Fix 3: replace getSignedImageUrl/STORAGE_BUCKETS with direct supabase call
+      if (data.profile_image_url) {
+        const { data: signedData, error: signedError } = await supabase
+          .storage
+          .from("profile-images") // replace with your actual bucket name
+          .createSignedUrl(data.profile_image_url, 60 * 60); // 1 hour expiry
+
+        if (!signedError && signedData?.signedUrl && isMountedRef.current) {
+          setProfileImageUrl(signedData.signedUrl);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
+
+  // Fix 4: renderProfilePicture is now properly closed with a fallback
+  const renderProfilePicture = () => {
+    const initial = profile?.username?.[0]?.toUpperCase() || "U";
+
+    if (profileImageUrl) {
+      return (
+        <Image
+          source={{ uri: profileImageUrl }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            borderWidth: 2,
+            borderColor: "#FCDE8C",
+          }}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    // Fallback: initials avatar
+    return (
+      <View
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          borderWidth: 2,
+          borderColor: "#FCDE8C",
+          backgroundColor: "#FCDE8C",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 22, fontWeight: "700", color: "#32393d" }}>
+          {initial}
+        </Text>
+      </View>
+    );
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    }
+
     setSavedExercises(mockWorkoutPlans);
     setWorkoutPlans(mockWorkoutPlans);
-  }, [username]);
+  }, [user]);
 
   const navigateToWorkout = (workoutPlan: WorkoutPlan) => {
     router.push({
@@ -99,11 +198,11 @@ export default function LandingMain() {
         style={{
           width: 479.338,
           height: 119.909,
-          position: "absolute",
+          position: 'absolute',
           left: -50,
           top: -90,
           borderRadius: 479.338,
-          backgroundColor: "#FFFEFE",
+          backgroundColor: '#FFFEFE',
         }}
       />
 
@@ -113,26 +212,45 @@ export default function LandingMain() {
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          <Gradient />
 
-          {/* Header */}
-          <View className="mt-32 mb-4 flex-row items-center justify-between px-4">
-            <Image
-              source={require("../../assets/images/profile-pic.png")}
-              style={{ height: 48, width: 48, borderRadius: 24 }}
-              resizeMode="cover"
-            />
+          {/* Semicircle Gradient Background */}
+          <View style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 0 }}>
+            <Svg
+              height={Dimensions.get('screen').height * .5}
+              width={Dimensions.get('screen').width}
+            >
+              <Defs>
+                <RadialGradient
+                  id="topSemiCircle"
+                  cx="50%"
+                  cy="0%"
+                  rx="120%"
+                  ry="70%"
+                  gradientUnits="objectBoundingBox"
+                >
+                  <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
+                  <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
+                </RadialGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
+            </Svg>
+          </View>
+
+          <View className="mt-32 mb-4 flex-row items-center px-4">
+            <View className="mr-4">{renderProfilePicture()}</View>
 
             <View className="flex-1 ml-3">
-              <H2 baseSize={15}>Hello {username}</H2>
+              <H2 baseSize={15}>
+                Hello {profile?.username ?? "!"}
+              </H2>
               <H1 baseSize={15}>Are you ready for your workout?</H1>
             </View>
 
-            <Image
-              source={require("../../assets/images/bell.png")}
+            {/* <Image
+              source={require('../../assets/images/bell.png')}
               style={{ height: 24, width: 24 }}
               resizeMode="contain"
-            />
+            /> */}
           </View>
 
           {/* Week Section */}
@@ -156,10 +274,8 @@ export default function LandingMain() {
 
                 <View style={{ marginTop: 6 }}>
                   {day.isPast || day.isToday ? (
-                    // Checkmark
                     <Text style={{ fontSize: 14, fontWeight: "700" }}>✓</Text>
                   ) : (
-                    //Open circle
                     <View
                       style={{
                         height: 12,
@@ -191,7 +307,7 @@ export default function LandingMain() {
                       {plan.name}
                     </P>
                     <P className="text-[#32393d] opacity-70 mt-1">
-                      {plan.exercises.join(", ")}
+                      {plan.exercises.join(', ')}
                     </P>
                   </View>
 
@@ -207,11 +323,13 @@ export default function LandingMain() {
 
           {/* Explore Exercise Section */}
           <View className="mb-6 flex-row items-center justify-between">
-            <H1 baseSize={13}>Explore Exercise Categories</H1>
+            <H1 baseSize={13}>
+              Explore Exercise Categories
+            </H1>
 
-            <Pressable onPress={() => router.push("/exploreCategories")}>
+            <Pressable onPress={() => router.push('/exploreCategories')}>
               <Text
-                style={{ color: "#FAB906", fontSize: 10 }}
+                style={{ color: "#FAB906", fontSize: 15 }}
                 className="font-bold tracking-wider"
               >
                 View More
@@ -225,20 +343,15 @@ export default function LandingMain() {
             className="mb-6"
           >
             <View className="flex-row px-4">
+
               {/* Abs */}
               <View
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Abs_Cat.png")}
-                  style={{
-                    height: 150,
-                    width: 150,
-                    marginTop: 3.5,
-                    marginRight: 40,
-                    marginLeft: 30,
-                  }}
+                  source={require('../../assets/images/Cats/Abs_Cat.png')}
+                  style={{ height: 150, width: 150, marginTop: 3.5, marginRight: 40, marginLeft: 30 }}
                   resizeMode="contain"
                 />
                 <Text className="text-center font-semibold text-[#32393d]">
@@ -252,7 +365,7 @@ export default function LandingMain() {
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Back_Cat.png")}
+                  source={require('../../assets/images/Cats/Back_Cat.png')}
                   style={{ height: 150, width: 150 }}
                   resizeMode="contain"
                 />
@@ -267,7 +380,7 @@ export default function LandingMain() {
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Chest_Cat.png")}
+                  source={require('../../assets/images/Cats/Chest_Cat.png')}
                   style={{ height: 150, width: 150, marginTop: -7 }}
                   resizeMode="contain"
                 />
@@ -282,7 +395,7 @@ export default function LandingMain() {
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Stretching_Cat.png")}
+                  source={require('../../assets/images/Cats/Stretching_Cat.png')}
                   style={{ height: 150, width: 150, marginTop: 1.5 }}
                   resizeMode="contain"
                 />
@@ -297,7 +410,7 @@ export default function LandingMain() {
                 style={{ width: 150, height: 190, marginTop: -7 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Arms_Cat.png")}
+                  source={require('../../assets/images/Cats/Arms_Cat.png')}
                   style={{ height: 150, width: 150 }}
                   resizeMode="contain"
                 />
@@ -312,7 +425,7 @@ export default function LandingMain() {
                 style={{ width: 150, height: 190, marginTop: 5 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Glutes_Cat.png")}
+                  source={require('../../assets/images/Cats/Glutes_Cat.png')}
                   style={{ height: 150, width: 150 }}
                   resizeMode="contain"
                 />
@@ -320,8 +433,10 @@ export default function LandingMain() {
                   Glutes
                 </Text>
               </View>
+
             </View>
           </ScrollView>
+
         </ScrollView>
       </View>
     </View>

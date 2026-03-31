@@ -173,6 +173,7 @@ export default function Profile() {
           workout_post_id: post.workout_post_id,
           profile_id: post.profile_id,
           username: post.username,
+          taggedUsernames: post.tagged_friends || [],
           image_url: post.image_url || "",
           description: post.description || "",
           created_at: post.created_at,
@@ -475,7 +476,10 @@ export default function Profile() {
                     </P>
                     {post.taggedUsernames.length > 0 && (
                       <P className="text-[#565656] text-xs mt-1">
-                        with {post.taggedUsernames.map((name) => `@${name}`).join(", ")}
+                        with{" "}
+                        {post.taggedUsernames
+                          .map((name) => `@${name}`)
+                          .join(", ")}
                       </P>
                     )}
                     <P className="text-[#565656] text-xs">

@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { ScrollView, View, Image, Dimensions, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Button, H1, H2, P } from "../../components/typography";
-import Sliders from '../../components/ui/Slider';
-import MuscleGroups from '@/components/ui/MuscleGroups';
-import Equipment from '@/components/ui/Equipment';
-import Gradient from '@/components/ui/Gradient';
+import Equipment from "@/components/ui/Equipment";
+import Gradient from "@/components/ui/Gradient";
+import MuscleGroups from "../../components/ui/MuscleGroups";
+import { ExerciseLibraryProvider } from "@/contexts/ExerciseLibraryContext";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Dimensions, ScrollView, View } from "react-native";
+import { Button, H2 } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
+import PopupMessage from "../../components/ui/PopupMessage";
+import Sliders from "../../components/ui/Slider";
 
 export default function GenerateWorkout() {
     const router = useRouter();

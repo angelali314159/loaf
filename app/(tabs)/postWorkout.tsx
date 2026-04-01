@@ -39,6 +39,11 @@ interface WorkoutData {
   workoutHistoryId?: string;
 }
 
+interface FriendOption {
+  id: string;
+  username: string;
+}
+
 export default function PostWorkout() {
   const params = useLocalSearchParams();
   const workoutDataParam = params.workoutData as string;
@@ -50,8 +55,12 @@ export default function PostWorkout() {
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
   const [isPicturesOpen, setIsPicturesOpen] = useState(true);
   const [isStatsOpen, setIsStatsOpen] = useState(true);
+  const [isTagsOpen, setIsTagsOpen] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
+  const [friends, setFriends] = useState<FriendOption[]>([]);
+  const [friendSearchQuery, setFriendSearchQuery] = useState("");
+  const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
 
   const MAX_CHARACTERS = 1000;
   const MAX_FILE_SIZE = 50 * 1024; // 50 KB - set in Supabase, can change later
@@ -90,7 +99,7 @@ export default function PostWorkout() {
           },
           {
             label: "Exercises",
-            value: `${data.exercises} exercises`,
+            value: `${data.exercises}`,
             visible: true,
             icon: "dumbbell",
           },
@@ -114,6 +123,53 @@ export default function PostWorkout() {
       }
     }
   }, [workoutDataParam]);
+
+  useEffect(() => {
+    fetchTaggableFriends();
+  }, [user?.id]);
+
+  const fetchTaggableFriends = async () => {
+    if (!user?.id) return;
+
+    try {
+      const [{ data: allProfiles, error: profilesError }, { data: friendsData, error: friendsError }] =
+        await Promise.all([
+          supabase.from("profiles").select("id, username"),
+          supabase
+            .from("friends")
+            .select("user_id, friend_id")
+            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+        ]);
+
+      if (profilesError) throw profilesError;
+      if (friendsError) throw friendsError;
+
+      const friendIds = new Set(
+        (friendsData || []).map((f) =>
+          f.user_id === user.id ? f.friend_id : f.user_id,
+        ),
+      );
+
+      const formattedFriends = (allProfiles || [])
+        .filter((profile) => profile.id !== user.id && friendIds.has(profile.id))
+        .map((profile) => ({
+          id: profile.id,
+          username: profile.username,
+        }));
+
+      setFriends(formattedFriends);
+    } catch (error) {
+      console.error("Error fetching taggable friends:", error);
+    }
+  };
+
+  const toggleFriendTag = (friendId: string) => {
+    setSelectedFriendIds((prev) =>
+      prev.includes(friendId)
+        ? prev.filter((id) => id !== friendId)
+        : [...prev, friendId],
+    );
+  };
 
   const uriToBlob = async (uri: string): Promise<Blob> => {
     const response = await fetch(uri);
@@ -356,6 +412,7 @@ export default function PostWorkout() {
         image_url: imageUrl,
         visible_stats: visibleStats,
         workout_stats: workoutStats,
+        tagged_friends: selectedFriendIds,
       });
 
       if (postError) {
@@ -375,6 +432,16 @@ export default function PostWorkout() {
 
   const height = Dimensions.get("screen").height;
   const width = Dimensions.get("screen").width;
+  const selectedFriends = friends.filter((friend) =>
+    selectedFriendIds.includes(friend.id),
+  );
+  const filteredFriends = friends.filter((friend) => {
+    const isSelected = selectedFriendIds.includes(friend.id);
+    const matchesSearch = friend.username
+      .toLowerCase()
+      .includes(friendSearchQuery.toLowerCase());
+    return !isSelected && matchesSearch;
+  });
 
   return (
     <KeyboardAvoidingView
@@ -597,7 +664,104 @@ export default function PostWorkout() {
             )}
           </View>
         </View>
+        {/* Tag Friends  */}
+        <View style={{ width: width * 0.84, marginTop: 20 }}>
+          <View className="flex-row justify-between items-center">
+            <H1 baseSize={13}>Tag friends</H1>
+            <TouchableOpacity
+              onPress={() => setIsTagsOpen(!isTagsOpen)}
+              className="p-2"
+            >
+              <Feather
+                name={isTagsOpen ? "chevron-up" : "chevron-down"}
+                size={24}
+                color="#09090B"
+              />
+            </TouchableOpacity>
+          </View>
 
+          {isTagsOpen && (
+            <View style={{ marginTop: 20 }}>
+              <TextInput
+                placeholder="Search your friends"
+                value={friendSearchQuery}
+                onChangeText={setFriendSearchQuery}
+                style={{
+                  width: "100%",
+                  borderWidth: 1,
+                  borderColor: "#B1B0B0",
+                  borderRadius: 8,
+                  padding: 12,
+                }}
+              />
+
+              {selectedFriends.length > 0 && (
+                <View
+                  style={{
+                    marginTop: 12,
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {selectedFriends.map((friend) => (
+                    <TouchableOpacity
+                      key={friend.id}
+                      onPress={() => toggleFriendTag(friend.id)}
+                      style={{
+                        backgroundColor: "#FCDE8C",
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <P style={{ color: "#2D3541" }}>@{friend.username}</P>
+                      <Feather name="x" size={14} color="#2D3541" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              <View style={{ marginTop: 12, gap: 8 }}>
+                {filteredFriends.slice(0, 8).map((friend) => (
+                  <TouchableOpacity
+                    key={friend.id}
+                    onPress={() => toggleFriendTag(friend.id)}
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#DADADA",
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <P style={{ color: "#32393d" }}>{friend.username}</P>
+                    <Feather name="plus" size={16} color="#32393d" />
+                  </TouchableOpacity>
+                ))}
+
+                {friends.length === 0 && (
+                  <P style={{ color: "#666", fontSize: 13 }}>
+                    Add friends first to tag them on your post.
+                  </P>
+                )}
+
+                {friends.length > 0 && filteredFriends.length === 0 && (
+                  <P style={{ color: "#666", fontSize: 13 }}>
+                    No more matching friends.
+                  </P>
+                )}
+              </View>
+            </View>
+          )}
+
+        </View>
         {/* Buttons Section */}
         <View
           style={{

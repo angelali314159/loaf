@@ -1,23 +1,35 @@
 import { router } from 'expo-router';
-import React from 'react';
 import { Dimensions, FlatList, Image, Pressable, Text, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 
+
+
 const categories = [
   { name: "Abs", image: require('../../assets/images/Cats/Abs_Cat.png') },
-  { name: "Arms", image: require('../../assets/images/Cats/Arms_Cat.png') },
+
+  { name: "Biceps", image: require('../../assets/images/Cats/Arms_Cat.png') },
+  { name: "Triceps", image: require('../../assets/images/Cats/Arms_Cat.png') },
+
   { name: "Back", image: require('../../assets/images/Cats/Back_Cat.png') },
+  { name: "Shoulders", image: require('../../assets/images/Cats/Back_Cat.png') },
+
   { name: "Chest", image: require('../../assets/images/Cats/Chest_Cat.png') },
+
   { name: "Glutes", image: require('../../assets/images/Cats/Glutes_Cat.png') },
+  { name: "Calves", image: require('../../assets/images/Cats/Glutes_Cat.png') },
+  {name: "Hamstrings", image: require('../../assets/images/Cats/Glutes_Cat.png') },
+  {name: "Quads", image: require('../../assets/images/Cats/Glutes_Cat.png') },
   { name: "Stretching", image: require('../../assets/images/Cats/Stretching_Cat.png') },
 ];
 
 export default function Explore() {
 
+  const arrow = require('../../assets/images/back-arrow.png');
+
   const handlePress = (category) => {
     router.push({
-      pathname: '/category',
+      pathname: '/exerciseList',
       params: { name: category.name },
     });
   };
@@ -49,10 +61,12 @@ export default function Explore() {
 
       {/* Gradient Background */}
       <View style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
+    
         <Svg
           height={Dimensions.get('screen').height * 0.5}
           width={Dimensions.get('screen').width}
         >
+    
           <Defs>
             <RadialGradient id="topSemiCircle" cx="50%" cy="0%" rx="120%" ry="70%">
               <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
@@ -63,12 +77,24 @@ export default function Explore() {
         </Svg>
       </View>
 
+      
+
       {/* Title */}
-      <View style={{ marginTop: 120, paddingHorizontal: 16 }}>
+      <View style={{ marginTop: 100, paddingHorizontal: 16 }}>
+
+      <Pressable onPress={() => router.navigate('/landingMain')}>
+        <Image
+            className=""
+            source={arrow}
+            resizeMode="contain"
+        />
+        </Pressable>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>
           Explore Exercise Categories
         </Text>
       </View>
+
+    
 
       {/* Grid */}
       <FlatList

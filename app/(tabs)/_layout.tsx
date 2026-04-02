@@ -85,6 +85,7 @@ export default function TabLayout() {
         name="exercisePreview"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
@@ -151,12 +152,14 @@ export default function TabLayout() {
         name="exploreCategories"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="exerciseList"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
     </Tabs>

@@ -2,7 +2,6 @@ import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Dimensions,
   Image,
   Pressable,
   ScrollView,
@@ -10,8 +9,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { H1, H2, P } from "../../components/typography";
+import Gradient from "../../components/ui/Gradient";
 import { supabase } from "../../utils/supabase";
 
 interface Exercise {
@@ -178,7 +177,6 @@ export default function LandingMain() {
     },
   ];
 
-  // Fix 2: cleanup isMountedRef on unmount
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -203,7 +201,6 @@ export default function LandingMain() {
         profile_image_url: data.profile_image_url,
       });
 
-      // Fix 3: replace getSignedImageUrl/STORAGE_BUCKETS with direct supabase call
       if (data.profile_image_url) {
         const { data: signedData, error: signedError } = await supabase.storage
           .from("profile-images") // replace with your actual bucket name
@@ -218,7 +215,6 @@ export default function LandingMain() {
     }
   };
 
-  // Fix 4: renderProfilePicture is now properly closed with a fallback
   const renderProfilePicture = () => {
     const initial = profile?.username?.[0]?.toUpperCase() || "U";
 
@@ -238,7 +234,6 @@ export default function LandingMain() {
       );
     }
 
-    // Fallback: initials avatar
     return (
       <View
         style={{
@@ -305,6 +300,13 @@ export default function LandingMain() {
     });
   };
 
+  const navigateToExerciseList = (categoryName: string) => {
+    router.push({
+      pathname: "/(tabs)/exerciseList",
+      params: { name: categoryName },
+    });
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <BlurView
@@ -326,36 +328,7 @@ export default function LandingMain() {
           contentContainerStyle={{ paddingBottom: 140 }}
           showsVerticalScrollIndicator={false}
         >
-          {/* Semicircle Gradient Background */}
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 0,
-            }}
-          >
-            <Svg
-              height={Dimensions.get("screen").height * 0.5}
-              width={Dimensions.get("screen").width}
-            >
-              <Defs>
-                <RadialGradient
-                  id="topSemiCircle"
-                  cx="50%"
-                  cy="0%"
-                  rx="120%"
-                  ry="70%"
-                  gradientUnits="objectBoundingBox"
-                >
-                  <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-                  <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-                </RadialGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-            </Svg>
-          </View>
+          <Gradient />
 
           <View className="mt-32 mb-4 flex-row items-center px-4">
             <View className="mr-4">{renderProfilePicture()}</View>
@@ -364,12 +337,6 @@ export default function LandingMain() {
               <H2 baseSize={15}>Hello {profile?.username ?? "!"}</H2>
               <H1 baseSize={15}>Are you ready for your workout?</H1>
             </View>
-
-            {/* <Image
-              source={require('../../assets/images/bell.png')}
-              style={{ height: 24, width: 24 }}
-              resizeMode="contain"
-            /> */}
           </View>
 
           {/* Week Section */}
@@ -469,7 +436,8 @@ export default function LandingMain() {
           >
             <View className="flex-row px-4">
               {/* Abs */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Abs")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -487,10 +455,11 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Abs
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Back */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Back")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -502,10 +471,11 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Back
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Chest */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Chest")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -517,40 +487,43 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Chest
                 </Text>
-              </View>
+              </Pressable>
 
-              {/* Stretching */}
-              <View
+              {/* Calves */}
+              <Pressable
+                onPress={() => navigateToExerciseList("Calves")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Stretching_Cat.png")}
+                  source={require("../../assets/images/Cats/Calves_Cat.png")}
                   style={{ height: 150, width: 150, marginTop: 1.5 }}
                   resizeMode="contain"
                 />
                 <Text className="text-center font-semibold text-[#32393d]">
-                  Stretching
+                  Calves
                 </Text>
-              </View>
+              </Pressable>
 
-              {/* Arms */}
-              <View
+              {/* Quads */}
+              <Pressable
+                onPress={() => navigateToExerciseList("Quads")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190, marginTop: -7 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Arms_Cat.png")}
+                  source={require("../../assets/images/Cats/Quads_Cat.png")}
                   style={{ height: 150, width: 150 }}
                   resizeMode="contain"
                 />
                 <Text className="text-center font-semibold text-[#32393d] mt-8">
-                  Arms
+                  Quads
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Glutes */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Glutes")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190, marginTop: 5 }}
               >
@@ -562,7 +535,7 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Glutes
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </ScrollView>
         </ScrollView>

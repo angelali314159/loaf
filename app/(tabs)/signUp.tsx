@@ -80,11 +80,7 @@ export default function Signup() {
     try {
       await signUp(email.trim(), password, displayName.trim());
 
-      showPopup(
-        "Account created successfully! Please check your email to confirm.",
-        "success",
-        "Welcome!",
-      );
+      showPopup("Account created successfully!", "success", "Welcome!");
 
       // Navigate after a short delay
       setTimeout(() => {

@@ -8,7 +8,9 @@ import {
   Text,
   View,
 } from "react-native";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { H3 } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
+import Gradient from "../../components/ui/Gradient";
 import { supabase } from "../../utils/supabase";
 
 const EXERCISE_IMAGES: Record<string, any> = {
@@ -46,11 +48,9 @@ interface Exercise {
 
 export default function ListExercises() {
   const { name } = useLocalSearchParams<{ name: string }>();
-
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const arrow = require("../../assets/images/back-arrow.png");
+  const { height, width } = Dimensions.get("window");
 
   const fetchExercises = async () => {
     try {
@@ -87,7 +87,12 @@ export default function ListExercises() {
 
   const renderItem = ({ item }: { item: Exercise }) => (
     <Pressable
-    onPress={() => router.push({ pathname: "/exercisePreview", params: { exerciseName: item.name } })}
+      onPress={() =>
+        router.push({
+          pathname: "/exercisePreview",
+          params: { exerciseName: item.name, from: "exerciseList" },
+        })
+      }
       style={({ pressed }) => ({
         flexDirection: "row",
         alignItems: "center",
@@ -115,7 +120,7 @@ export default function ListExercises() {
         />
       </View>
 
-      {/* Name and  Category */}
+      {/* Name and Category */}
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 16, fontWeight: "700", color: "#32393d" }}>
           {item.name}
@@ -124,58 +129,33 @@ export default function ListExercises() {
           {item.category ?? ""}
         </Text>
       </View>
-
-    
     </Pressable>
   );
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-      {/* Background Gradient */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0 }}>
-        <Svg
-          height={Dimensions.get("screen").height * 0.5}
-          width={Dimensions.get("screen").width}
-        >
-          <Defs>
-            <RadialGradient
-              id="topSemiCircle"
-              cx="50%"
-              cy="0%"
-              rx="120%"
-              ry="70%"
-            >
-              <Stop offset="0%" stopColor="#FCDE8C" stopOpacity={0.9} />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity={0.1} />
-            </RadialGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#topSemiCircle)" />
-        </Svg>
-      </View>
+      <Gradient />
 
       {/* Header */}
-      <View style={{ marginTop: 100, paddingHorizontal: 16 }}>
-        <Pressable onPress={() => router.navigate("/exploreCategories")}>
-          <Image source={arrow} resizeMode="contain" />
-        </Pressable>
-
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginTop: 8 }}>
-          {name} Exercises
-        </Text>
+      <View style={{ marginTop: height * 0.1, marginLeft: width * 0.05 }}>
+        <BackArrow page="/exploreCategories" />
+        <H3>{name} Exercises</H3>
       </View>
 
       {/* List */}
-     
-   
-      <FlatList 
+      <FlatList
         data={exercises}
         keyExtractor={(item) => item.exercise_lib_id.toString()}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingTop: 20, paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingTop: 20,
+          paddingBottom: 40,
+          paddingLeft: width * 0.05,
+          paddingRight: width * 0.05,
+        }}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => (
           <View
-          
             style={{
               height: 1,
               backgroundColor: "rgba(50,57,61,0.08)",
@@ -191,7 +171,6 @@ export default function ListExercises() {
           ) : null
         }
       />
-
     </View>
   );
 }

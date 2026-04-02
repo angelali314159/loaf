@@ -489,27 +489,24 @@ export default function Profile() {
                 </View>
 
                 {/* Post Image */}
-                {imageUrls.get(post.workout_post_id) ? (
-                  <Image
-                    source={{ uri: imageUrls.get(post.workout_post_id) }}
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    resizeMode="cover"
-                  />
-                ) : post.image_url ? (
-                  <View
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    className="bg-[#f2f0ef] items-center justify-center"
-                  >
-                    <P className="text-[#565656]">Loading image...</P>
-                  </View>
-                ) : (
-                  <View
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    className="bg-[#f2f0ef] items-center justify-center"
-                  >
-                    <Feather name="image" size={48} color="#DADADA" />
-                  </View>
-                )}
+                {post.image_url &&
+                  (imageUrls.get(post.workout_post_id) ? (
+                    <Image
+                      source={{ uri: imageUrls.get(post.workout_post_id) }}
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      className="bg-[#f2f0ef] items-center justify-center"
+                    >
+                      <P className="text-[#565656]">Loading image...</P>
+                    </View>
+                  ))}
+
+                {/* Divider when no image */}
+                {!post.image_url && <View className="h-px bg-[#DADADA]" />}
 
                 {/* Stats Icons with Like Button */}
                 <View className="flex-row items-center py-3 px-4 border-b border-[#DADADA]">

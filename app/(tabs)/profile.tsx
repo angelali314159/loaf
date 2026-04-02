@@ -530,7 +530,7 @@ export default function Profile() {
                   {/* Like button */}
                   <TouchableOpacity
                     onPress={() => handleLikePost(post.workout_post_id)}
-                    className="flex-row items-center ml-4"
+                    className="items-center ml-4"
                   >
                     <Image
                       source={
@@ -541,12 +541,12 @@ export default function Profile() {
                       style={{ width: 24, height: 24 }}
                       resizeMode="contain"
                     />
+                    {post.profile_id === user?.id && (
+                      <P className="text-[#565656] text-xs mt-1">
+                        {post.like_user_list.length}
+                      </P>
+                    )}
                   </TouchableOpacity>
-                  {post.profile_id === user?.id && (
-                    <P className="text-[#565656] mr-2">
-                      {post.like_user_list.length}
-                    </P>
-                  )}
                 </View>
 
                 {/* Caption */}

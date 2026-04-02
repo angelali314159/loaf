@@ -96,12 +96,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="allExercises"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
         name="index"
         options={{
           href: null,
@@ -126,12 +120,14 @@ export default function TabLayout() {
         name="settings"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="friendSearch"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen

@@ -179,8 +179,9 @@ export default function WorkoutList() {
                   className="text-[#32393d] text-center text-lg "
                   style={{ marginTop: height * 0.2 }}
                 >
-                  No saved workouts yet.{"\n"}Create your first workout plan by
-                  pressing the + button.
+                  No saved workouts yet.{"\n"}Start your first workout by
+                  tapping the + button above!{"\n"}Press the paw to save it
+                  after.
                 </P>
               ) : (
                 workoutPlans.map((item) => (

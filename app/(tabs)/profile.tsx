@@ -418,7 +418,13 @@ export default function Profile() {
               {streak} week{streak !== 1 ? "s" : ""}
             </H4>
           </TouchableOpacity>
-          <View className="w-px bg-[#B1B0B0] mx-2" />
+          <View
+            style={{
+              width: 1,
+              backgroundColor: "#B1B0B0",
+              marginHorizontal: 8,
+            }}
+          />
 
           {/* League */}
           <TouchableOpacity
@@ -430,7 +436,13 @@ export default function Profile() {
               Biscuits
             </H4>
           </TouchableOpacity>
-          <View className="w-px bg-[#B1B0B0] mx-2" />
+          <View
+            style={{
+              width: 1,
+              backgroundColor: "#B1B0B0",
+              marginHorizontal: 8,
+            }}
+          />
 
           {/* Friends */}
           <TouchableOpacity
@@ -506,7 +518,9 @@ export default function Profile() {
                   ))}
 
                 {/* Divider when no image */}
-                {!post.image_url && <View className="h-px bg-[#DADADA]" />}
+                {!post.image_url && (
+                  <View style={{ height: 1, backgroundColor: "#DADADA" }} />
+                )}
 
                 {/* Stats Icons with Like Button */}
                 <View className="flex-row items-center py-3 px-4 border-b border-[#DADADA]">

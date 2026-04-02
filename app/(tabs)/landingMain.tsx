@@ -307,6 +307,17 @@ export default function LandingMain() {
     });
   };
 
+  const navigateToWorkoutPreview = (workoutPlan: WorkoutPlan) => {
+    router.push({
+      pathname: "/(tabs)/workoutPreview",
+      params: {
+        workoutName: workoutPlan.name,
+        duration: workoutPlan.duration,
+        exercises: JSON.stringify(workoutPlan.exercises),
+      },
+    });
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <BlurView
@@ -385,7 +396,7 @@ export default function LandingMain() {
               <TouchableOpacity
                 key={index}
                 className="bg-white p-4 mb-3 shadow-sm"
-                onPress={() => navigateToPreview(plan)}
+                onPress={() => navigateToWorkoutPreview(plan)}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1 pr-3">

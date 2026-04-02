@@ -1,7 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, ScrollView, TouchableOpacity, View } from "react-native";
+import {
+  Dimensions,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Button, H3, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
 import WorkoutPreview from "../../components/ui/WorkoutPreview";
@@ -96,6 +102,16 @@ export default function WorkoutList() {
     });
   };
 
+  const navigateToWorkoutPreview = (workoutPlan: WorkoutPlan) => {
+    router.push({
+      pathname: "/(tabs)/workoutPreview",
+      params: {
+        workoutName: workoutPlan.workout_name,
+        exercises: JSON.stringify(workoutPlan.exercises),
+      },
+    });
+  };
+
   const startEmptyWorkout = () => {
     router.push({
       pathname: "/(tabs)/inWorkout",
@@ -168,13 +184,15 @@ export default function WorkoutList() {
                 </P>
               ) : (
                 workoutPlans.map((item) => (
-                  <TouchableOpacity
+                  <View
                     key={item.workout_id}
-                    onPress={() => navigateToWorkout(item)}
                     className="mt-2 mb-2 pb-4 border-b border-[#32393d]/20"
                   >
                     <View className="flex-row justify-between items-start">
-                      <View className="flex-1 mr-4">
+                      <Pressable
+                        className="flex-1 mr-4"
+                        onPress={() => navigateToWorkoutPreview(item)}
+                      >
                         <P
                           className="text-[#32393d]"
                           style={{ fontWeight: "600" }}
@@ -189,7 +207,7 @@ export default function WorkoutList() {
                           {item.exercises.length > 2 &&
                             `, +${item.exercises.length - 2} more`}
                         </P>
-                      </View>
+                      </Pressable>
                       <Button
                         title="Start"
                         width="18%"
@@ -200,7 +218,7 @@ export default function WorkoutList() {
                         }}
                       />
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 ))
               )}
             </>

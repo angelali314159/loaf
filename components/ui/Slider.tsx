@@ -1,15 +1,21 @@
 import { Slider, Text } from "@rneui/themed";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Image, StyleSheet, View } from "react-native";
 
 type SlidersComponentProps = {
   onValueChange?: (value: number) => void;
+  value?: number;
 };
 
 const Sliders: React.FunctionComponent<SlidersComponentProps> = ({
   onValueChange,
+  value: externalValue = 0,
 }) => {
   const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    setValue(externalValue);
+  }, [externalValue]);
 
   const handleValueChange = (newValue: number) => {
     setValue(newValue);

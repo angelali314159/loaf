@@ -132,14 +132,16 @@ export default function PostWorkout() {
     if (!user?.id) return;
 
     try {
-      const [{ data: allProfiles, error: profilesError }, { data: friendsData, error: friendsError }] =
-        await Promise.all([
-          supabase.from("profiles").select("id, username"),
-          supabase
-            .from("friends")
-            .select("user_id, friend_id")
-            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
-        ]);
+      const [
+        { data: allProfiles, error: profilesError },
+        { data: friendsData, error: friendsError },
+      ] = await Promise.all([
+        supabase.from("profiles").select("id, username"),
+        supabase
+          .from("friends")
+          .select("user_id, friend_id")
+          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+      ]);
 
       if (profilesError) throw profilesError;
       if (friendsError) throw friendsError;
@@ -151,7 +153,9 @@ export default function PostWorkout() {
       );
 
       const formattedFriends = (allProfiles || [])
-        .filter((profile) => profile.id !== user.id && friendIds.has(profile.id))
+        .filter(
+          (profile) => profile.id !== user.id && friendIds.has(profile.id),
+        )
         .map((profile) => ({
           id: profile.id,
           username: profile.username,
@@ -402,6 +406,11 @@ export default function PostWorkout() {
         prs: workoutData.prs || 0,
       };
 
+      // Convert friend IDs to usernames
+      const taggedUsernames = selectedFriendIds
+        .map((id) => friends.find((f) => f.id === id)?.username)
+        .filter((username): username is string => !!username);
+
       // Insert workout post
       const { error: postError } = await supabase.from("workout_posts").insert({
         profile_id: user.id,
@@ -412,7 +421,7 @@ export default function PostWorkout() {
         image_url: imageUrl,
         visible_stats: visibleStats,
         workout_stats: workoutStats,
-        tagged_friends: selectedFriendIds,
+        tagged_friends: taggedUsernames,
       });
 
       if (postError) {
@@ -691,6 +700,17 @@ export default function PostWorkout() {
             )}
           </View>
         </View>
+
+        {/* Divider */}
+        <View
+          style={{
+            width: width * 0.84,
+            height: 1,
+            backgroundColor: "#DADADA",
+            marginTop: 20,
+          }}
+        />
+
         {/* Tag Friends  */}
         <View style={{ width: width * 0.84, marginTop: 20 }}>
           <View className="flex-row justify-between items-center">
@@ -787,7 +807,6 @@ export default function PostWorkout() {
               </View>
             </View>
           )}
-
         </View>
         {/* Buttons Section */}
         <View

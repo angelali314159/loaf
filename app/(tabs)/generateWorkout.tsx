@@ -1,12 +1,13 @@
 import Equipment from "@/components/ui/Equipment";
 import Gradient from "@/components/ui/Gradient";
-import MuscleGroups from "../../components/ui/MuscleGroups";
 import { ExerciseLibraryProvider } from "@/contexts/ExerciseLibraryContext";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Dimensions, ScrollView, View } from "react-native";
 import { Button, H2 } from "../../components/typography";
 import BackArrow from "../../components/ui/BackArrow";
+import MuscleGroups from "../../components/ui/MuscleGroups";
 import PopupMessage from "../../components/ui/PopupMessage";
 import Sliders from "../../components/ui/Slider";
 
@@ -17,6 +18,15 @@ export default function GenerateWorkout() {
   const [sliderValue, setSliderValue] = useState(0);
   const [showSelectionError, setShowSelectionError] = useState(false);
   const { height } = Dimensions.get("window");
+
+  useFocusEffect(
+    useCallback(() => {
+      setSelectedGroups([]);
+      setSelectedEquipments([]);
+      setSliderValue(0);
+      setShowSelectionError(false);
+    }, []),
+  );
 
   return (
     <ExerciseLibraryProvider>
@@ -32,7 +42,7 @@ export default function GenerateWorkout() {
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>
                 Specify workout duration
               </H2>
-              <Sliders onValueChange={setSliderValue} />
+              <Sliders value={sliderValue} onValueChange={setSliderValue} />
             </View>
             <View className="gap-2">
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>

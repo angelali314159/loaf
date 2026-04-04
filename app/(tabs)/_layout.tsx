@@ -85,6 +85,7 @@ export default function TabLayout() {
         name="exercisePreview"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
@@ -92,12 +93,6 @@ export default function TabLayout() {
         options={{
           href: null,
           tabBarStyle: { display: "none" },
-        }}
-      />
-      <Tabs.Screen
-        name="allExercises"
-        options={{
-          href: null,
         }}
       />
       <Tabs.Screen
@@ -125,12 +120,14 @@ export default function TabLayout() {
         name="settings"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
         name="friendSearch"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
       <Tabs.Screen
@@ -151,6 +148,21 @@ export default function TabLayout() {
         name="exploreCategories"
         options={{
           href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="exerciseList"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
+        }}
+      />
+      <Tabs.Screen
+        name="workoutPreview"
+        options={{
+          href: null,
+          tabBarStyle: { display: "none" },
         }}
       />
     </Tabs>

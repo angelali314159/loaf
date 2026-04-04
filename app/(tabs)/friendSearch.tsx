@@ -1,23 +1,21 @@
 import Gradient from "@/components/ui/Gradient";
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
 import React from "react";
 import {
   Dimensions,
   Image,
-  Pressable,
   ScrollView,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Button, H3, P } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
 import "../../global.css";
 import { supabase } from "../../utils/supabase";
 
 export default function FriendSearch() {
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
   const profile = require("../../assets/images/profile-pic.png");
 
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -54,7 +52,7 @@ export default function FriendSearch() {
       // Fetch user's friendships (where user is either user_id or friend_id)
       const { data: friendsData, error: friendsError } = await supabase
         .from("friends")
-        .select("user_id, friend_id")
+        .select("user_id, friend_id, streaks")
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
       if (friendsError) throw friendsError;
@@ -65,6 +63,17 @@ export default function FriendSearch() {
         ) || [],
       );
 
+      const streaksByFriendId = new Map<string, number>();
+      (friendsData || []).forEach((friendship) => {
+        const friendId =
+          friendship.user_id === user.id
+            ? friendship.friend_id
+            : friendship.user_id;
+        const streakValue = Number(friendship.streaks) || 0;
+        const previous = streaksByFriendId.get(friendId) || 0;
+        streaksByFriendId.set(friendId, Math.max(previous, streakValue)); //for when bidirectional relationship occurs in friends table meaning more than one streak count shown
+      });
+
       const formattedAllProfiles =
         allProfiles
           ?.filter((p) => p.id !== user.id)
@@ -72,7 +81,7 @@ export default function FriendSearch() {
             id: p.id,
             name: p.username,
             profile: "profile-pic.png",
-            streaks: 0,
+            streaks: streaksByFriendId.get(p.id) || 0,
           })) || [];
 
       const formattedFriends = formattedAllProfiles.filter((p) =>
@@ -201,9 +210,8 @@ export default function FriendSearch() {
     >
       <Gradient />
       {/* Back arrow  */}
-      <Pressable onPress={() => router.navigate("/profile")}>
-        <Image className="" source={arrow} resizeMode="contain" />
-      </Pressable>
+      <BackArrow page="/profile" />
+
       {/* Search Bar */}
       <View className="flex flex-row items-center bg-[#E6E6E6] rounded-full px-4 py-2">
         <Feather name="search" size={18} color="#666" />
@@ -291,7 +299,7 @@ export default function FriendSearch() {
                       title={
                         pendingRequests.has(friend.id) ? "Requested" : "Add"
                       }
-                      width="18%"
+                      width={pendingRequests.has(friend.id) ? "28%" : "18%"}
                       fontSize={12}
                       height={8}
                       onPress={() => handleAddFriend(friend.id)}

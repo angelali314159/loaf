@@ -1,19 +1,22 @@
 import Equipment from "@/components/ui/Equipment";
 import Gradient from "@/components/ui/Gradient";
-import MuscleGroups from "@/components/ui/muscleGroups";
+import MuscleGroups from "../../components/ui/MuscleGroups";
 import { ExerciseLibraryProvider } from "@/contexts/ExerciseLibraryContext";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Dimensions, Image, Pressable, ScrollView, View } from "react-native";
+import { Dimensions, ScrollView, View } from "react-native";
 import { Button, H2 } from "../../components/typography";
+import BackArrow from "../../components/ui/BackArrow";
+import PopupMessage from "../../components/ui/PopupMessage";
 import Sliders from "../../components/ui/Slider";
 
 export default function GenerateWorkout() {
   const router = useRouter();
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
+  const [sliderValue, setSliderValue] = useState(0);
+  const [showSelectionError, setShowSelectionError] = useState(false);
   const { height } = Dimensions.get("window");
-  const arrow = require("../../assets/images/back-arrow.png");
 
   return (
     <ExerciseLibraryProvider>
@@ -22,16 +25,14 @@ export default function GenerateWorkout() {
         style={{ paddingBottom: height * 0.1, paddingHorizontal: 20 }}
       >
         <Gradient />
-        <Pressable onPress={() => router.navigate("/workoutList")}>
-          <Image className="" source={arrow} resizeMode="contain" />
-        </Pressable>
+        <BackArrow page="/(tabs)/workoutList" />
         <ScrollView className="flex-1">
           <View className="gap-6">
             <View className="gap-2">
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>
                 Specify workout duration
               </H2>
-              <Sliders />
+              <Sliders onValueChange={setSliderValue} />
             </View>
             <View className="gap-2">
               <H2 style={{ fontFamily: "Inter_SemiBold" }}>
@@ -58,6 +59,7 @@ export default function GenerateWorkout() {
             onPress={() => {
               setSelectedGroups([]);
               setSelectedEquipments([]);
+              setSliderValue(0);
             }}
             color="black"
             fontColor="white"
@@ -67,12 +69,23 @@ export default function GenerateWorkout() {
             className="flex-1"
             title="Generate"
             onPress={() => {
-              console.log(
-                "Selected Groups: ",
-                selectedGroups,
-                "Selected Equipments: ",
-                selectedEquipments,
-              );
+              if (
+                selectedGroups.length === 0 ||
+                selectedEquipments.length === 0 ||
+                sliderValue === 0
+              ) {
+                setShowSelectionError(true);
+                return;
+              }
+
+              router.push({
+                pathname: "/generatedPreview",
+                params: {
+                  duration: sliderValue,
+                  selectedGroups: selectedGroups,
+                  selectedEquipments: selectedEquipments,
+                },
+              });
             }}
             color="yellow"
             fontColor="black"
@@ -80,6 +93,14 @@ export default function GenerateWorkout() {
           />
         </View>
       </View>
+
+      <PopupMessage
+        visible={showSelectionError}
+        title="Error"
+        message="Please choose at least one muscle group, one equipment option, and set time above 0 minutes."
+        type="error"
+        onClose={() => setShowSelectionError(false)}
+      />
     </ExerciseLibraryProvider>
   );
 }

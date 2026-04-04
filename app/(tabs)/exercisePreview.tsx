@@ -22,25 +22,31 @@ const { height: SCREEN_H } = Dimensions.get("window");
 // Static mapping of all exercise images in assets/images/exercises/
 // Add new images here as you add them to the folder
 const EXERCISE_IMAGES: Record<string, any> = {
-  "filler.jpg": require("../../assets/images/exercises/filler.jpg"),
-  "latPulldown.jpg": require("../../assets/images/exercises/latPulldown.jpg"),
-  "legRaises.jpg": require("../../assets/images/exercises/legRaises.jpg"),
-  "russianTwists.jpg": require("../../assets/images/exercises/russianTwists.jpg"),
-  "shoulderPress.jpg": require("../../assets/images/exercises/shoulderPress.jpg"),
-  "seatedRows.jpg": require("../../assets/images/exercises/seatedRows.jpg"),
-  "shoulderShrugs.jpg": require("../../assets/images/exercises/shoulderShrugs.jpg"),
-  "sidePlanks.jpg": require("../../assets/images/exercises/sidePlanks.jpg"),
-  "sitUps.jpg": require("../../assets/images/exercises/sitUps.jpg"),
-  "standingCalfRaises.jpg": require("../../assets/images/exercises/standingCalfRaises.jpg"),
-  "tricepKickbacks.jpg": require("../../assets/images/exercises/tricepKickbacks.jpg"),
-  "tricepsDips.jpg": require("../../assets/images/exercises/tricepsDips.jpg"),
-  "tricepsRopePulldown.jpg": require("../../assets/images/exercises/tricepsRopePulldown.jpg"),
+  "filler.jpg": require("../../assets/images/Exercises/filler.jpg"),
+  "latPulldown.jpg": require("../../assets/images/Exercises/latPulldown.jpg"),
+  "legRaises.jpg": require("../../assets/images/Exercises/legRaises.jpg"),
+  "russianTwists.jpg": require("../../assets/images/Exercises/russianTwists.jpg"),
+  "shoulderPress.jpg": require("../../assets/images/Exercises/shoulderPress.jpg"),
+  "seatedRows.jpg": require("../../assets/images/Exercises/seatedRows.jpg"),
+  "shoulderShrugs.jpg": require("../../assets/images/Exercises/shoulderShrugs.jpg"),
+  "sidePlanks.jpg": require("../../assets/images/Exercises/sidePlanks.jpg"),
+  "sitUps.jpg": require("../../assets/images/Exercises/sitUps.jpg"),
+  "standingCalfRaises.jpg": require("../../assets/images/Exercises/standingCalfRaises.jpg"),
+  "tricepKickbacks.jpg": require("../../assets/images/Exercises/tricepKickbacks.jpg"),
+  "tricepsDips.jpg": require("../../assets/images/Exercises/tricepsDips.jpg"),
+  "tricepsRopePulldown.jpg": require("../../assets/images/Exercises/tricepsRopePulldown.jpg"),
+  "frontRaise.jpg": require("../../assets/images/Exercises/frontRaise.jpg"),
+  "preacherCurl.jpg": require("../../assets/images/Exercises/preacherCurl.jpg"),
+  "lateralRaiseCable.jpg": require("../../assets/images/Exercises/lateralRaiseCable.jpg"),
+  "latPulldownCable.jpg": require("../../assets/images/Exercises/latPulldownCable.jpg"),
+  "seatedCalfRaise.jpg": require("../../assets/images/Exercises/seatedCalfRaise.jpg"),
+  "sitUpsBodyweight.jpg": require("../../assets/images/Exercises/sitUpsBodyweight.jpg"),
+  "skullCrusher.jpg": require("../../assets/images/Exercises/skullCrusher.jpg"),
+  "standingCalfRaisesDumbbell.jpg": require("../../assets/images/Exercises/standingCalfRaisesDumbbell.jpg"),
+  "tricepDips.jpg": require("../../assets/images/Exercises/tricepsDips.jpg"),
 };
 
 function ExercisePreviewContent() {
-  // Support BOTH styles of params:
-  // - old: exerciseName
-  // - new: exerciseId (from your long-press)
   const params = useLocalSearchParams<{
     exerciseName?: string;
     exerciseId?: string;
@@ -346,7 +352,6 @@ function ExercisePreviewContent() {
   );
 }
 
-// Wrapper with provider
 export default function ExercisePreview() {
   return (
     <ExerciseLibraryProvider>

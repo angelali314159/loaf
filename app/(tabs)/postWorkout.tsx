@@ -420,6 +420,33 @@ export default function PostWorkout() {
         throw postError;
       }
 
+      const uniqueTaggedFriendIds = Array.from(
+        new Set(selectedFriendIds.filter((friendId) => friendId !== user.id)),
+      );
+
+      if (uniqueTaggedFriendIds.length > 0) {
+        const streakUpdateResults = await Promise.all(
+          uniqueTaggedFriendIds.map(async (friendId) => {
+            const { error } = await supabase.rpc("increment_friends_streak", {
+              p_user_id: user.id,
+              p_other_user_id: friendId,
+            });
+
+            return { friendId, error };
+          }),
+        );
+
+        const failedUpdates = streakUpdateResults.filter(
+          (result) => result.error,
+        );
+        if (failedUpdates.length > 0) {
+          console.warn(
+            "Some tagged-friend streak updates failed:",
+            failedUpdates,
+          );
+        }
+      }
+
       Alert.alert("Success!", "Your workout has been posted");
       router.push("/(tabs)/landingMain");
     } catch (error) {

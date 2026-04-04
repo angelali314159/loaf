@@ -189,7 +189,7 @@ const ExerciseRow = React.memo(function ExerciseRow({
       className="py-3"
     >
       <View
-        className={`flex-row items-center rounded-2xl px-4 py-4 ${
+        className={`flex-row items-center rounded-2xl py-2 px-2 gap-5 ${
           isSelected ? "bg-[#F7D57A]" : "bg-transparent"
         }`}
       >
@@ -206,18 +206,18 @@ const ExerciseRow = React.memo(function ExerciseRow({
             </Text>
           )}
         </View>
-        <View className="flex-1 ml-4">
-          <Text className="text-[#0B1626] text-xl font-semibold">
+        <View className="flex-1">
+          <Text className="text-[#0B1626] font-semibold text-sm">
             {ex.name}
           </Text>
-          <Text className="text-[#6B7280] text-base mt-1">
+          <Text className="text-[#6B7280] text-sm mt-1">
             {getSubtitle(ex)}
           </Text>
         </View>
-        <View className="ml-4">
+        <View className="">
           <Feather
             name={isSelected ? "minus" : "plus"}
-            size={32}
+            size={20}
             color="#4B5563"
           />
         </View>

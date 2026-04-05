@@ -608,7 +608,10 @@ export default function Profile() {
           ) : (
             friendPosts.map((post) => (
               <>
-                <View key={post.workout_post_id}>
+                <View
+                  key={post.workout_post_id}
+                  className="mb-6 bg-white rounded-2xl shadow-sm border border-[#DADADA]"
+                >
                   {/* Post Header */}
                   <View className="flex-row items-center p-4 pb-2">
                     <View className="flex-1">
@@ -658,36 +661,57 @@ export default function Profile() {
                       style={{ justifyContent: "flex-start", gap: 8 }}
                     >
                       {post.visible_stats &&
-                        post.visible_stats.map((stat, index) => (
-                          <View key={index} className="items-left">
-                            <TouchableOpacity
-                              onPress={function (): void {}}
-                              style={{
-                                backgroundColor: "#fffefe",
-                                paddingHorizontal: 10,
-                                paddingVertical: 2,
-                                borderRadius: 20,
-                                borderColor: "#3c3f42",
-                                borderWidth: 1,
-                                flexDirection: "row",
-                                gap: 8,
-                              }}
-                            >
-                              <FontAwesome5
-                                name={stat.icon}
-                                size={15}
-                                color="#32393d"
-                              />
-                              <P className="text-xs text-[#565656] mt-1">
-                                {stat.value}
-                              </P>
-                            </TouchableOpacity>
-                          </View>
-                        ))}
-                    </View>
+                        post.visible_stats.map((stat, index) => {
+                          const responsivePaddingH =
+                            Dimensions.get("window").width * 0.025;
+                          const responsivePaddingV =
+                            Dimensions.get("window").height * 0.006;
+                          const responsiveIconSize = Math.max(
+                            Dimensions.get("window").width * 0.04,
+                            15,
+                          );
 
-                    {/* Like button TODO: finish like button functionality*/}
-                    {/*}
+                          return (
+                            <View key={index} className="items-left">
+                              <TouchableOpacity
+                                onPress={function (): void {}}
+                                style={{
+                                  backgroundColor: "#fffefe",
+                                  paddingHorizontal: responsivePaddingH,
+                                  paddingVertical: responsivePaddingV,
+                                  borderRadius: 20,
+                                  borderColor: "#3c3f42",
+                                  borderWidth: 1,
+                                  flexDirection: "row",
+                                  gap: 8,
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <FontAwesome5
+                                  name={stat.icon}
+                                  size={responsiveIconSize}
+                                  color="#32393d"
+                                />
+                                <P className="text-xs text-[#565656]">
+                                  {stat.value}
+                                </P>
+                              </TouchableOpacity>
+                            </View>
+                          );
+                        })}
+                    </View>
+                  </View>
+
+                  {/* Caption */}
+                  {post.description && (
+                    <View className="px-4 pb-4">
+                      <P className="text-[#32393d]">{post.description}</P>
+                    </View>
+                  )}
+
+                  {/* Like button TODO: finish like button functionality*/}
+                  {/*}
                   <TouchableOpacity
                     onPress={() => handleLikePost(post.workout_post_id)}
                     className="items-center ml-4"
@@ -709,15 +733,6 @@ export default function Profile() {
                       
                   </TouchableOpacity>
                   */}
-                  </View>
-                </View>
-                <View>
-                  {/* Caption */}
-                  {post.description && (
-                    <View className="p-4" style={{ marginTop: -20 }}>
-                      <P className="text-[#32393d]">{post.description}</P>
-                    </View>
-                  )}
                 </View>
               </>
             ))

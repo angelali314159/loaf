@@ -50,6 +50,7 @@ function ExercisePreviewContent() {
   const params = useLocalSearchParams<{
     exerciseName?: string;
     exerciseId?: string;
+    from?: string;
   }>();
 
   const { getExerciseByName, loading } = useExerciseLibrary();
@@ -211,7 +212,7 @@ function ExercisePreviewContent() {
                 }}
               >
                 <TouchableOpacity
-                  onPress={() => router.push("/inWorkout")}
+                  onPress={() => router.push("/exerciseList")}
                   activeOpacity={0.8}
                   style={{
                     width: 40,
@@ -315,35 +316,39 @@ function ExercisePreviewContent() {
               </View>
 
               {/* ADD EXERCISE BUTTON */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => {
-                  console.log("Add exercise:", exerciseFromLibrary.name);
-                  console.log(
-                    "Exercise ID:",
-                    exerciseFromLibrary.exercise_lib_id,
-                  );
-                }}
-                style={{
-                  marginTop: 22,
-                  backgroundColor: "#F7D57A",
-                  borderRadius: 999,
-                  paddingVertical: 14,
-                  alignItems: "center",
-                }}
-              >
-                <Text
+              {params.from !== "exerciseList" && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    console.log("Add exercise:", exerciseFromLibrary.name);
+                    console.log(
+                      "Exercise ID:",
+                      exerciseFromLibrary.exercise_lib_id,
+                    );
+                  }}
                   style={{
-                    fontSize: 16,
-                    fontWeight: "700",
-                    color: "#32393d",
+                    marginTop: 22,
+                    backgroundColor: "#F7D57A",
+                    borderRadius: 999,
+                    paddingVertical: 14,
+                    alignItems: "center",
                   }}
                 >
-                  Add Exercise
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "700",
+                      color: "#32393d",
+                    }}
+                  >
+                    Add Exercise
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-              <View style={{ height: 12 }} />
+              <View
+                style={{ height: params.from !== "exerciseList" ? 12 : 24 }}
+              />
             </View>
           </View>
         </ScrollView>

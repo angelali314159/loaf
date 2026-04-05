@@ -518,7 +518,13 @@ export default function Profile() {
               10 weeks
             </H4>
           </TouchableOpacity>
-          <View className="w-px bg-[#B1B0B0] mx-2" />
+          <View
+            style={{
+              width: 1,
+              backgroundColor: "#B1B0B0",
+              marginHorizontal: 8,
+            }}
+          />
 
           {/* League */}
           <TouchableOpacity
@@ -530,7 +536,13 @@ export default function Profile() {
               Biscuits
             </H4>
           </TouchableOpacity>
-          <View className="w-px bg-[#B1B0B0] mx-2" />
+          <View
+            style={{
+              width: 1,
+              backgroundColor: "#B1B0B0",
+              marginHorizontal: 8,
+            }}
+          />
 
           {/* Friends */}
           <TouchableOpacity
@@ -614,29 +626,29 @@ export default function Profile() {
                 </View>
 
                 {/* Post Image */}
-                {imageUrls.get(post.workout_post_id) ? (
-                  <Image
-                    source={{ uri: imageUrls.get(post.workout_post_id) }}
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    resizeMode="cover" />
-                ) : post.image_url ? (
-                  <View
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    className="bg-[#f2f0ef] items-center justify-center"
-                  >
-                    <P className="text-[#565656]">Loading image...</P>
-                  </View>
-                ) : (
-                  <View
-                    style={{ width: "100%", height: screenWidth - 48 }}
-                    className="bg-[#f2f0ef] items-center justify-center"
-                  >
-                    <Feather name="image" size={48} color="#DADADA" />
-                  </View>
+                {post.image_url &&
+                  (imageUrls.get(post.workout_post_id) ? (
+                    <Image
+                      source={{ uri: imageUrls.get(post.workout_post_id) }}
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      className="bg-[#f2f0ef] items-center justify-center"
+                    >
+                      <P className="text-[#565656]">Loading image...</P>
+                    </View>
+                  ))}
+
+                {/* Divider when no image */}
+                {!post.image_url && (
+                  <View style={{ height: 1, backgroundColor: "#DADADA" }} />
                 )}
 
                 {/* Stats Icons with Like Button */}
-                <View className="flex-row items-left p-4 pt-2" style={{ marginHorizontal: -15, marginBottom: -25}}>
+                <View className="flex-row items-left p-4 pt-2" style={}>
                   <View className="flex-row flex-1 justify-around" style={{ justifyContent: "flex-start", gap: 8}}>
                     {post.visible_stats && post.visible_stats.map((stat, index) => (
                       <View key={index} className="items-left">
@@ -668,7 +680,7 @@ export default function Profile() {
                   {/* Like button */}
                   <TouchableOpacity
                     onPress={() => handleLikePost(post.workout_post_id)}
-                    className="flex-row items-center ml-4"
+                    className="items-center ml-4"
                   >
                     <Image
                       source={
@@ -679,18 +691,18 @@ export default function Profile() {
                       style={{ width: 24, height: 24 }}
                       resizeMode="contain"
                     />
+                    {post.profile_id === user?.id && (
+                      <P className="text-[#565656] text-xs mt-1">
+                        {post.like_user_list.length}
+                      </P>
+                    )}
                   </TouchableOpacity>
-                  {post.profile_id === user?.id && (
-                    <P className="text-[#565656] mr-2">
-                      {post.like_user_list.length}
-                    </P>
-                  )}
                 </View>
               </View>
               <View>
                 {/* Caption */}
                 {post.description && (
-                  <View className="p-4">
+                  <View className="p-4" style={{ marginTop: -20 }}>
                     <P className="text-[#32393d]">{post.description}</P>
                   </View>
                 )}

@@ -1,28 +1,36 @@
 import { BlurView } from "expo-blur";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { H1, H2, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
+import { supabase } from "../../utils/supabase";
 
 interface Exercise {
+  exercise_lib_id: number;
   name: string;
-  sets: number;
-  reps: string;
-  type: string[];
-  time?: number;
+  exercise_order: number;
 }
 
 interface WorkoutPlan {
   name: string;
-  exercises: string[];
+  duration: number;
+  muscleGroups: string[];
+  equipment: string[];
+  exercises: Exercise[];
+}
+
+interface Profile {
+  username: string;
+  name: string;
+  profile_image_url?: string;
 }
 
 const generateWeek = () => {
@@ -61,34 +69,252 @@ const generateWeek = () => {
 };
 
 export default function LandingMain() {
-  const { username = "Joooy" } = useLocalSearchParams<{ username?: string }>();
-  const [savedExercises, setSavedExercises] = useState<WorkoutPlan[]>([]);
+  const { username } = useLocalSearchParams<{ username?: string }>();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
 
-  //Week Generated
+  // Fix 1: define isMountedRef
+  const isMountedRef = useRef(true);
+
   const week = useMemo(() => generateWeek(), []);
 
   const mockWorkoutPlans: WorkoutPlan[] = [
     {
-      name: "Upper Body Blast",
-      exercises: ["Bicep Curls", "Push-ups", "Shoulder Press"],
+      name: "Back and Bicep Blast",
+      duration: 40,
+      muscleGroups: ["Back", "Biceps"],
+      equipment: ["Machine", "Barbell", "Dumbbell"],
+      exercises: [
+        {
+          exercise_lib_id: 48,
+          name: "Lat Pulldown (Machine)",
+          exercise_order: 1,
+        },
+        {
+          exercise_lib_id: 50,
+          name: "Bent Over Row (Barbell)",
+          exercise_order: 2,
+        },
+        {
+          exercise_lib_id: 81,
+          name: "Preacher Curl",
+          exercise_order: 3,
+        },
+        {
+          exercise_lib_id: 95,
+          name: "Bicep Curl (Dumbbell)",
+          exercise_order: 4,
+        },
+      ],
     },
-    { name: "Leg Day", exercises: ["Squats", "Lunges", "Calf Raises"] },
     {
-      name: "Core Focus",
-      exercises: ["Planks", "Russian Twists", "Leg Raises"],
+      name: "Leg Day",
+      duration: 50,
+      muscleGroups: ["Legs", "Glutes"],
+      equipment: ["Barbell", "Dumbbell"],
+      exercises: [
+        {
+          exercise_lib_id: 74,
+          name: "Squat (Barbell)",
+          exercise_order: 1,
+        },
+        {
+          exercise_lib_id: 71,
+          name: "Lunge (Bodyweight)",
+          exercise_order: 2,
+        },
+        {
+          exercise_lib_id: 65,
+          name: "Romanian Deadlift (Dumbbell)",
+          exercise_order: 3,
+        },
+        {
+          exercise_lib_id: 67,
+          name: "Lying Leg Curl",
+          exercise_order: 4,
+        },
+        {
+          exercise_lib_id: 72,
+          name: "Bulgarian Split Squat (Dumbbell)",
+          exercise_order: 5,
+        },
+        {
+          exercise_lib_id: 64,
+          name: "Hip Adduction",
+          exercise_order: 6,
+        },
+      ],
+    },
+    {
+      name: "At Home Core Focus",
+      duration: 20,
+      muscleGroups: ["Core"],
+      equipment: [],
+      exercises: [
+        {
+          exercise_lib_id: 55,
+          name: "Plank",
+          exercise_order: 1,
+        },
+        {
+          exercise_lib_id: 46,
+          name: "Leg Raises",
+          exercise_order: 2,
+        },
+        {
+          exercise_lib_id: 87,
+          name: "Sit Ups (Bodyweight)",
+          exercise_order: 3,
+        },
+        {
+          exercise_lib_id: 44,
+          name: "Side Plank",
+          exercise_order: 4,
+        },
+      ],
     },
   ];
 
   useEffect(() => {
-    setSavedExercises(mockWorkoutPlans);
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const fetchProfileData = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, profile_image_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      setProfile({
+        username: data.username || "User",
+        name: data.username || "User",
+        profile_image_url: data.profile_image_url,
+      });
+
+      if (data.profile_image_url) {
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("profile-images") // replace with your actual bucket name
+          .createSignedUrl(data.profile_image_url, 60 * 60); // 1 hour expiry
+
+        if (!signedError && signedData?.signedUrl && isMountedRef.current) {
+          setProfileImageUrl(signedData.signedUrl);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
+
+  const renderProfilePicture = () => {
+    const initial = profile?.username?.[0]?.toUpperCase() || "U";
+
+    if (profileImageUrl) {
+      return (
+        <Image
+          source={{ uri: profileImageUrl }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            borderWidth: 2,
+            borderColor: "#FCDE8C",
+          }}
+          resizeMode="cover"
+        />
+      );
+    }
+
+    return (
+      <View
+        style={{
+          width: 60,
+          height: 60,
+          borderRadius: 30,
+          borderWidth: 2,
+          borderColor: "#FCDE8C",
+          backgroundColor: "#FCDE8C",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text style={{ fontSize: 22, fontWeight: "700", color: "#32393d" }}>
+          {initial}
+        </Text>
+      </View>
+    );
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfileData();
+    }
+
     setWorkoutPlans(mockWorkoutPlans);
-  }, [username]);
+  }, [user]);
 
   const navigateToWorkout = (workoutPlan: WorkoutPlan) => {
     router.push({
       pathname: "/(tabs)/inWorkout",
-      params: { workoutId: workoutPlan.name },
+      params: {
+        sessionId: Date.now().toString(),
+        workoutId: "mock-" + workoutPlan.name.replace(/\s+/g, "-"),
+        workoutName: workoutPlan.name,
+        exercises: JSON.stringify(workoutPlan.exercises),
+        isSavedWorkout: "false",
+      },
+    });
+  };
+
+  const navigateToPreview = (workoutPlan: WorkoutPlan) => {
+    router.push({
+      pathname: "/(tabs)/generatedPreview",
+      params: {
+        duration: workoutPlan.duration,
+        selectedGroups: JSON.stringify(workoutPlan.muscleGroups),
+        selectedEquipments: JSON.stringify(workoutPlan.equipment),
+      },
+    });
+  };
+
+  const navigateToExerciseList = (categoryName: string) => {
+    router.push({
+      pathname: "/(tabs)/exerciseList",
+      params: { name: categoryName },
+    });
+  };
+
+  const navigateToWorkoutPreview = (workoutPlan: WorkoutPlan) => {
+    router.push({
+      pathname: "/(tabs)/workoutPreview",
+      params: {
+        workoutName: workoutPlan.name,
+        duration: workoutPlan.duration,
+        exercises: JSON.stringify(workoutPlan.exercises),
+      },
     });
   };
 
@@ -115,24 +341,13 @@ export default function LandingMain() {
         >
           <Gradient />
 
-          {/* Header */}
-          <View className="mt-32 mb-4 flex-row items-center justify-between px-4">
-            <Image
-              source={require("../../assets/images/profile-pic.png")}
-              style={{ height: 48, width: 48, borderRadius: 24 }}
-              resizeMode="cover"
-            />
+          <View className="mt-32 mb-4 flex-row items-center px-4">
+            <View className="mr-4">{renderProfilePicture()}</View>
 
             <View className="flex-1 ml-3">
-              <H2 baseSize={15}>Hello {username}</H2>
+              <H2 baseSize={15}>Hello {profile?.username ?? "!"}</H2>
               <H1 baseSize={15}>Are you ready for your workout?</H1>
             </View>
-
-            <Image
-              source={require("../../assets/images/bell.png")}
-              style={{ height: 24, width: 24 }}
-              resizeMode="contain"
-            />
           </View>
 
           {/* Week Section */}
@@ -156,10 +371,8 @@ export default function LandingMain() {
 
                 <View style={{ marginTop: 6 }}>
                   {day.isPast || day.isToday ? (
-                    // Checkmark
                     <Text style={{ fontSize: 14, fontWeight: "700" }}>✓</Text>
                   ) : (
-                    //Open circle
                     <View
                       style={{
                         height: 12,
@@ -177,13 +390,13 @@ export default function LandingMain() {
 
           {/* Workouts Section */}
           <View className="mb-6">
-            <H1 baseSize={16}>Planned Workouts</H1>
+            <H1 baseSize={13}>Explore New Workouts</H1>
 
             {workoutPlans.map((plan, index) => (
               <TouchableOpacity
                 key={index}
                 className="bg-white p-4 mb-3 shadow-sm"
-                onPress={() => navigateToWorkout(plan)}
+                onPress={() => navigateToWorkoutPreview(plan)}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1 pr-3">
@@ -191,11 +404,19 @@ export default function LandingMain() {
                       {plan.name}
                     </P>
                     <P className="text-[#32393d] opacity-70 mt-1">
-                      {plan.exercises.join(", ")}
+                      {plan.exercises
+                        .slice(0, 2)
+                        .map((ex) => ex.name)
+                        .join(", ")}
+                      {plan.exercises.length > 2 &&
+                        `, +${plan.exercises.length - 2} more`}
                     </P>
                   </View>
 
-                  <Pressable className="w-20 py-2 rounded-2xl bg-[#FCDE8C] items-center">
+                  <Pressable
+                    className="w-20 py-2 rounded-2xl bg-[#FCDE8C] items-center"
+                    onPress={() => navigateToWorkout(plan)}
+                  >
                     <Text className="text-black font-bold tracking-wider">
                       Start
                     </Text>
@@ -211,7 +432,7 @@ export default function LandingMain() {
 
             <Pressable onPress={() => router.push("/exploreCategories")}>
               <Text
-                style={{ color: "#FAB906", fontSize: 10 }}
+                style={{ color: "#FAB906", fontSize: 15 }}
                 className="font-bold tracking-wider"
               >
                 View More
@@ -226,7 +447,8 @@ export default function LandingMain() {
           >
             <View className="flex-row px-4">
               {/* Abs */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Abs")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -244,10 +466,11 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Abs
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Back */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Back")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -259,10 +482,11 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Back
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Chest */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Chest")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
@@ -274,40 +498,43 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Chest
                 </Text>
-              </View>
+              </Pressable>
 
-              {/* Stretching */}
-              <View
+              {/* Calves */}
+              <Pressable
+                onPress={() => navigateToExerciseList("Calves")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Stretching_Cat.png")}
+                  source={require("../../assets/images/Cats/Calves_Cat.png")}
                   style={{ height: 150, width: 150, marginTop: 1.5 }}
                   resizeMode="contain"
                 />
                 <Text className="text-center font-semibold text-[#32393d]">
-                  Stretching
+                  Calves
                 </Text>
-              </View>
+              </Pressable>
 
-              {/* Arms */}
-              <View
+              {/* Quads */}
+              <Pressable
+                onPress={() => navigateToExerciseList("Quads")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190, marginTop: -7 }}
               >
                 <Image
-                  source={require("../../assets/images/Cats/Arms_Cat.png")}
+                  source={require("../../assets/images/Cats/Quads_Cat.png")}
                   style={{ height: 150, width: 150 }}
                   resizeMode="contain"
                 />
                 <Text className="text-center font-semibold text-[#32393d] mt-8">
-                  Arms
+                  Quads
                 </Text>
-              </View>
+              </Pressable>
 
               {/* Glutes */}
-              <View
+              <Pressable
+                onPress={() => navigateToExerciseList("Glutes")}
                 className="mr-6 items-center justify-between"
                 style={{ width: 150, height: 190, marginTop: 5 }}
               >
@@ -319,7 +546,7 @@ export default function LandingMain() {
                 <Text className="text-center font-semibold text-[#32393d]">
                   Glutes
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </ScrollView>
         </ScrollView>

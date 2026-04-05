@@ -117,7 +117,7 @@ export default function Login() {
         {/* Email Address */}
         <P>Email Address</P>
         <TextLineInput
-          placeholder="JennaSmith@gmail.com"
+          placeholder="email@email.com"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"

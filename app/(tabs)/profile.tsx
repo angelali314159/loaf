@@ -648,7 +648,7 @@ export default function Profile() {
                 )}
 
                 {/* Stats Icons with Like Button */}
-                <View className="flex-row items-left p-4 pt-2" style={}>
+                <View className="flex-row items-left p-4 pt-2" style={{ }}>
                   <View className="flex-row flex-1 justify-around" style={{ justifyContent: "flex-start", gap: 8}}>
                     {post.visible_stats && post.visible_stats.map((stat, index) => (
                       <View key={index} className="items-left">

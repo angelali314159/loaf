@@ -52,7 +52,7 @@ export default function FriendSearch() {
       // Fetch user's friendships (where user is either user_id or friend_id)
       const { data: friendsData, error: friendsError } = await supabase
         .from("friends")
-        .select("user_id, friend_id, streaks")
+        .select("user_id, friend_id")
         .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
       if (friendsError) throw friendsError;
@@ -63,16 +63,23 @@ export default function FriendSearch() {
         ) || [],
       );
 
-      const streaksByFriendId = new Map<string, number>();
-      (friendsData || []).forEach((friendship) => {
-        const friendId =
-          friendship.user_id === user.id
-            ? friendship.friend_id
-            : friendship.user_id;
-        const streakValue = Number(friendship.streaks) || 0;
-        const previous = streaksByFriendId.get(friendId) || 0;
-        streaksByFriendId.set(friendId, Math.max(previous, streakValue)); //for when bidirectional relationship occurs in friends table meaning more than one streak count shown
-      });
+      const streakEntries = await Promise.all(
+        Array.from(friendIds).map(async (friendId) => {
+          const { data, error } = await supabase.rpc(
+            "get_streaks_between_users",
+            {
+              p_user_id: user.id,
+              p_other_user_id: friendId,
+            },
+          );
+
+          if (error) throw error;
+
+          return [friendId, Number(data?.[0]?.streaks) || 0] as const;
+        }),
+      );
+
+      const streaksByFriendId = new Map<string, number>(streakEntries);
 
       const formattedAllProfiles =
         allProfiles

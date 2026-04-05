@@ -1,7 +1,8 @@
 import { BlurView } from "expo-blur";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Dimensions,
   Image,
   Pressable,
   ScrollView,
@@ -9,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { H1, H2, P } from "../../components/typography";
+import { H1, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
 import { supabase } from "../../utils/supabase";
 
@@ -69,13 +70,12 @@ const generateWeek = () => {
 };
 
 export default function LandingMain() {
-  const { username } = useLocalSearchParams<{ username?: string }>();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const { height, width } = Dimensions.get("window");
 
-  // Fix 1: define isMountedRef
   const isMountedRef = useRef(true);
 
   const week = useMemo(() => generateWeek(), []);
@@ -289,17 +289,6 @@ export default function LandingMain() {
     });
   };
 
-  const navigateToPreview = (workoutPlan: WorkoutPlan) => {
-    router.push({
-      pathname: "/(tabs)/generatedPreview",
-      params: {
-        duration: workoutPlan.duration,
-        selectedGroups: JSON.stringify(workoutPlan.muscleGroups),
-        selectedEquipments: JSON.stringify(workoutPlan.equipment),
-      },
-    });
-  };
-
   const navigateToExerciseList = (categoryName: string) => {
     router.push({
       pathname: "/(tabs)/exerciseList",
@@ -335,23 +324,37 @@ export default function LandingMain() {
 
       <View className="flex-1 bg-white">
         <ScrollView
-          className="flex-1 mx-4"
-          contentContainerStyle={{ paddingBottom: 140 }}
+          className="flex-1"
+          style={{ paddingLeft: width * 0.05, paddingRight: width * 0.05 }}
+          contentContainerStyle={{ paddingBottom: height * 0.15 }}
           showsVerticalScrollIndicator={false}
         >
           <Gradient />
 
-          <View className="mt-32 mb-4 flex-row items-center px-4">
-            <View className="mr-4">{renderProfilePicture()}</View>
+          <View
+            style={{
+              marginTop: height * 0.12,
+              marginBottom: height * 0.02,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: width * 0.04,
+            }}
+          >
+            <View>{renderProfilePicture()}</View>
 
-            <View className="flex-1 ml-3">
-              <H2 baseSize={15}>Hello {profile?.username ?? "!"}</H2>
-              <H1 baseSize={15}>Are you ready for your workout?</H1>
+            <View style={{ flex: 1, justifyContent: "center" }}>
+              <P>Hello {profile?.username ?? "!"}</P>
+              <P style={{ fontWeight: "700" }}>
+                Are you ready for your workout?
+              </P>
             </View>
           </View>
 
           {/* Week Section */}
-          <View className="flex-row justify-between px-4 mb-6">
+          <View
+            className="flex-row justify-between mb-6"
+            style={{ paddingHorizontal: width * 0.02 }}
+          >
             {week.map((day, index) => (
               <View
                 key={index}
@@ -390,17 +393,29 @@ export default function LandingMain() {
 
           {/* Workouts Section */}
           <View className="mb-6">
-            <H1 baseSize={13}>Explore New Workouts</H1>
+            <H1 baseSize={12} className="mb-3">
+              Explore New Workouts
+            </H1>
 
             {workoutPlans.map((plan, index) => (
               <TouchableOpacity
                 key={index}
-                className="bg-white p-4 mb-3 shadow-sm"
+                style={{
+                  backgroundColor: "#fff",
+                  padding: height * 0.015,
+                  marginBottom: height * 0.015,
+                  borderRadius: width * 0.04,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 3,
+                  elevation: 2,
+                }}
                 onPress={() => navigateToWorkoutPreview(plan)}
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-1 pr-3">
-                    <P className="text-[#32393d] font-semibold text-lg">
+                    <P className="text-[#32393d]" style={{ fontWeight: "600" }}>
                       {plan.name}
                     </P>
                     <P className="text-[#32393d] opacity-70 mt-1">
@@ -428,7 +443,7 @@ export default function LandingMain() {
 
           {/* Explore Exercise Section */}
           <View className="mb-6 flex-row items-center justify-between">
-            <H1 baseSize={13}>Explore Exercise Categories</H1>
+            <H1 baseSize={12}>Explore Exercise Categories</H1>
 
             <Pressable onPress={() => router.push("/exploreCategories")}>
               <Text

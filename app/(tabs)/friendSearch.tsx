@@ -231,7 +231,10 @@ export default function FriendSearch() {
           placeholderTextColor="#777"
           value={searchQuery}
           onChangeText={setSearchQuery}
-          style={{ paddingVertical: 0 }}
+          style={{
+            paddingVertical: 0,
+            textAlignVertical: "center",
+          }}
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => setSearchQuery("")}>

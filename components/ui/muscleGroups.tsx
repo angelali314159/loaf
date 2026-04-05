@@ -34,16 +34,18 @@ export default function MuscleGroups({
     "Shoulders",
     "Biceps",
     "Triceps",
+    "Glutes",
   ];
 
-  const { width, height } = Dimensions.get("window");
-  let boxWidth = (width - 100) / 3;
+  const { width } = Dimensions.get("window");
+  let boxWidth = (width - 100) / 3; // 20 padding on each side and 20 gap between boxes
   if (boxWidth > 150) {
+    // Set a max width for larger screens
     boxWidth = 150;
   }
 
-  const cssNotSelected = `bg-[#f2f0ef] border border-[#B1B0B0] rounded-lg items-center justify-center gap-2 py-2`;
-  const cssSelected = `bg-[#FCDE8C] border border-[#FCDE8C] rounded-lg items-center justify-center gap-2 py-2`;
+  const cssNotSelected = `bg-[#f2f0ef] border border-[#B1B0B0] rounded-lg items-center justify-center gap-2`;
+  const cssSelected = `bg-[#FCDE8C] border border-[#FCDE8C] rounded-lg items-center justify-center gap-2`;
 
   return (
     <View className="flex flex-row flex-wrap gap-4">
@@ -52,7 +54,7 @@ export default function MuscleGroups({
           className={
             selectedGroups.includes(muscleName) ? cssSelected : cssNotSelected
           }
-          style={{ width: boxWidth, height: boxWidth }}
+          style={{ width: boxWidth, height: boxWidth, paddingVertical: 10 }}
           key={index}
           onPress={() => {
             if (selectedGroups.includes(muscleName)) {
@@ -68,9 +70,10 @@ export default function MuscleGroups({
             <Image
               source={muscleImages[muscleName]}
               style={{ width: 40, height: 40 }}
+              resizeMode="contain"
             />
           )}
-          <P>{muscleName}</P>
+          <P className="text-center">{muscleName}</P>
         </Pressable>
       ))}
     </View>

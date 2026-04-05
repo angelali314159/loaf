@@ -607,134 +607,132 @@ export default function Profile() {
             </View>
           ) : (
             friendPosts.map((post) => (
-              <>
-                <View
-                  key={post.workout_post_id}
-                  className="mb-6 bg-white rounded-2xl shadow-sm border border-[#DADADA]"
-                >
-                  {/* Post Header */}
-                  <View className="flex-row items-center p-4 pb-2">
-                    <View className="flex-1">
-                      <P className="text-[#32393d] font-semibold">
-                        {post.username}
-                      </P>
-                      {post.taggedUsernames.length > 0 && (
-                        <P className="text-[#565656] text-xs mt-1">
-                          with{" "}
-                          {post.taggedUsernames
-                            .map((name) => `@${name}`)
-                            .join(", ")}
-                        </P>
-                      )}
-                      <P className="text-[#565656] text-xs">
-                        {formatTimeAgo(post.created_at)}
-                      </P>
-                    </View>
-                  </View>
-
-                  {/* Post Image */}
-                  {post.image_url &&
-                    (imageUrls.get(post.workout_post_id) ? (
-                      <Image
-                        source={{ uri: imageUrls.get(post.workout_post_id) }}
-                        style={{ width: "100%", height: screenWidth - 48 }}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View
-                        style={{ width: "100%", height: screenWidth - 48 }}
-                        className="bg-[#f2f0ef] items-center justify-center"
-                      >
-                        <P className="text-[#565656]">Loading image...</P>
-                      </View>
-                    ))}
-
-                  {/* Divider when no image */}
-                  {!post.image_url && (
-                    <View style={{ height: 1, backgroundColor: "#DADADA" }} />
-                  )}
-
-                  {/* Stats Icons */}
-                  <View className="flex-row items-left p-4 pt-2" style={{}}>
-                    <View
-                      className="flex-row flex-1 justify-around"
-                      style={{ justifyContent: "flex-start", gap: 8 }}
-                    >
-                      {post.visible_stats &&
-                        post.visible_stats.map((stat, index) => {
-                          const responsivePaddingH =
-                            Dimensions.get("window").width * 0.025;
-                          const responsivePaddingV =
-                            Dimensions.get("window").height * 0.006;
-                          const responsiveIconSize = Math.max(
-                            Dimensions.get("window").width * 0.04,
-                            15,
-                          );
-
-                          return (
-                            <View key={index} className="items-left">
-                              <TouchableOpacity
-                                onPress={function (): void {}}
-                                style={{
-                                  backgroundColor: "#fffefe",
-                                  paddingHorizontal: responsivePaddingH,
-                                  paddingVertical: responsivePaddingV,
-                                  borderRadius: 20,
-                                  borderColor: "#3c3f42",
-                                  borderWidth: 1,
-                                  flexDirection: "row",
-                                  gap: 8,
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <FontAwesome5
-                                  name={stat.icon}
-                                  size={responsiveIconSize}
-                                  color="#32393d"
-                                />
-                                <P className="text-xs text-[#565656]">
-                                  {stat.value}
-                                </P>
-                              </TouchableOpacity>
-                            </View>
-                          );
-                        })}
-                    </View>
-                  </View>
-
-                  {/* Caption */}
-                  {post.description && (
-                    <View className="px-4 pb-4">
-                      <P className="text-[#32393d]">{post.description}</P>
-                    </View>
-                  )}
-
-                  {/* Like button TODO: finish like button functionality*/}
-                  {/*}
-                  <TouchableOpacity
-                    onPress={() => handleLikePost(post.workout_post_id)}
-                    className="items-center ml-4"
-                  >
-                    <Image
-                      source={
-                        post.like_user_list.includes(user?.id || "")
-                          ? require("../../assets/images/paw-filled.png")
-                          : require("../../assets/images/paw-outline.png")
-                      }
-                      style={{ width: 24, height: 24 }}
-                      resizeMode="contain"
-                    />
-                    {post.profile_id === user?.id && (
+              <View
+                key={post.workout_post_id}
+                className="mb-6 bg-white rounded-2xl shadow-sm border border-[#DADADA]"
+              >
+                {/* Post Header */}
+                <View className="flex-row items-center p-4 pb-2">
+                  <View className="flex-1">
+                    <P className="text-[#32393d] font-semibold">
+                      {post.username}
+                    </P>
+                    {post.taggedUsernames.length > 0 && (
                       <P className="text-[#565656] text-xs mt-1">
-                        {post.like_user_list.length}
+                        with{" "}
+                        {post.taggedUsernames
+                          .map((name) => `@${name}`)
+                          .join(", ")}
                       </P>
                     )}
-                      
-                  </TouchableOpacity>
-                  */}
+                    <P className="text-[#565656] text-xs">
+                      {formatTimeAgo(post.created_at)}
+                    </P>
+                  </View>
                 </View>
-              </>
+
+                {/* Post Image */}
+                {post.image_url &&
+                  (imageUrls.get(post.workout_post_id) ? (
+                    <Image
+                      source={{ uri: imageUrls.get(post.workout_post_id) }}
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={{ width: "100%", height: screenWidth - 48 }}
+                      className="bg-[#f2f0ef] items-center justify-center"
+                    >
+                      <P className="text-[#565656]">Loading image...</P>
+                    </View>
+                  ))}
+
+                {/* Divider when no image */}
+                {!post.image_url && (
+                  <View style={{ height: 1, backgroundColor: "#DADADA" }} />
+                )}
+
+                {/* Stats Icons */}
+                <View className="flex-row items-left p-4 pt-2" style={{}}>
+                  <View
+                    className="flex-row flex-1 justify-around"
+                    style={{ justifyContent: "flex-start", gap: 8 }}
+                  >
+                    {post.visible_stats &&
+                      post.visible_stats.map((stat, index) => {
+                        const responsivePaddingH =
+                          Dimensions.get("window").width * 0.025;
+                        const responsivePaddingV =
+                          Dimensions.get("window").height * 0.006;
+                        const responsiveIconSize = Math.max(
+                          Dimensions.get("window").width * 0.04,
+                          15,
+                        );
+
+                        return (
+                          <View key={index} className="items-left">
+                            <TouchableOpacity
+                              onPress={function (): void {}}
+                              style={{
+                                backgroundColor: "#fffefe",
+                                paddingHorizontal: responsivePaddingH,
+                                paddingVertical: responsivePaddingV,
+                                borderRadius: 20,
+                                borderColor: "#3c3f42",
+                                borderWidth: 1,
+                                flexDirection: "row",
+                                gap: 8,
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <FontAwesome5
+                                name={stat.icon}
+                                size={responsiveIconSize}
+                                color="#32393d"
+                              />
+                              <P className="text-xs text-[#565656]">
+                                {stat.value}
+                              </P>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                  </View>
+                </View>
+
+                {/* Caption */}
+                {post.description && (
+                  <View className="px-4 pb-4">
+                    <P className="text-[#32393d]">{post.description}</P>
+                  </View>
+                )}
+
+                {/* Like button TODO: finish like button functionality*/}
+                {/*}
+                <TouchableOpacity
+                  onPress={() => handleLikePost(post.workout_post_id)}
+                  className="items-center ml-4"
+                >
+                  <Image
+                    source={
+                      post.like_user_list.includes(user?.id || "")
+                        ? require("../../assets/images/paw-filled.png")
+                        : require("../../assets/images/paw-outline.png")
+                    }
+                    style={{ width: 24, height: 24 }}
+                    resizeMode="contain"
+                  />
+                  {post.profile_id === user?.id && (
+                    <P className="text-[#565656] text-xs mt-1">
+                      {post.like_user_list.length}
+                    </P>
+                  )}
+                    
+                </TouchableOpacity>
+                */}
+              </View>
             ))
           )}
         </View>

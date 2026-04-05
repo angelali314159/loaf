@@ -100,6 +100,7 @@ export default function ListExercises() {
         paddingHorizontal: 16,
         opacity: pressed ? 0.6 : 1,
         transform: [{ scale: pressed ? 0.97 : 1 }],
+        width: width * 0.9,
       })}
     >
       {/* Thumbnail */}
@@ -111,6 +112,7 @@ export default function ListExercises() {
           overflow: "hidden",
           backgroundColor: "#e5e5e5",
           marginRight: 14,
+          flexShrink: 0,
         }}
       >
         <Image
@@ -121,11 +123,17 @@ export default function ListExercises() {
       </View>
 
       {/* Name and Category */}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 16, fontWeight: "700", color: "#32393d" }}>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 16, fontWeight: "700", color: "#32393d" }}
+        >
           {item.name}
         </Text>
-        <Text style={{ fontSize: 13, color: "#888", marginTop: 2 }}>
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 13, color: "#888", marginTop: 2 }}
+        >
           {item.category ?? ""}
         </Text>
       </View>

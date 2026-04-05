@@ -25,7 +25,7 @@ export default function TabLayout() {
             backgroundColor: "transparent",
             borderRadius: width * 0.13,
             marginHorizontal: width * 0.02,
-            marginBottom: height * 0.05,
+            marginBottom: height * 0.03,
             height: height * 0.09,
             borderTopWidth: 0,
           },

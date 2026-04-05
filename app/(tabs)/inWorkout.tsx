@@ -936,10 +936,8 @@ function InWorkoutContent() {
     // A typed value of 0 is allowed; only block if the field was never touched (value === 0 AND no previous value to fall back on, meaning it shows "-")
     const hasEmptyValues = exerciseBlocks.some((block) =>
       block.sets.some(
-        (set) =>
-          set.done &&
-          ((set.reps === 0 && set.previousReps === null) ||
-            (set.lbs === 0 && set.previousLbs === null)),
+        (set) => set.done && set.reps === 0 && set.previousReps === null,
+        // Allow 0 for lbs - removed the lbs check per user request
       ),
     );
 
@@ -1499,7 +1497,7 @@ function InWorkoutContent() {
                         {/* 3: lbs - show previous as placeholder */}
                         <View style={fiveColCellStyle}>
                           <TextInput
-                            value={row.lbs === 0 ? "" : String(row.lbs)}
+                            value={String(row.lbs)}
                             onChangeText={(v) =>
                               updateSetValue(
                                 block.exercise.exercise_lib_id,

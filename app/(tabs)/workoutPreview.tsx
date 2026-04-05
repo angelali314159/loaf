@@ -7,11 +7,11 @@ import { useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Dimensions,
-    ScrollView,
-    Text,
-    View,
+  ActivityIndicator,
+  Dimensions,
+  ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { Button, H2, P } from "../../components/typography";
 import BackArrow from "../../components/ui/BackArrow";
@@ -142,8 +142,9 @@ export default function WorkoutPreviewContent() {
                   <View
                     key={index}
                     className="bg-white rounded-lg p-4 border-l-4 border-yellow-400"
+                    style={{ justifyContent: "center", minHeight: 40 }}
                   >
-                    <View className="flex-row justify-between items-start mb-2">
+                    <View className="flex-row justify-between items-center">
                       <View className="flex-1">
                         <P
                           style={{ fontFamily: "Inter_SemiBold" }}

@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { Button, H1, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
+import PopupMessage from "../../components/ui/PopupMessage";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../utils/supabase";
 
@@ -61,6 +62,7 @@ export default function PostWorkout() {
   const [friends, setFriends] = useState<FriendOption[]>([]);
   const [friendSearchQuery, setFriendSearchQuery] = useState("");
   const [selectedFriendIds, setSelectedFriendIds] = useState<string[]>([]);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const MAX_CHARACTERS = 1000;
   const MAX_FILE_SIZE = 50 * 1024; // 50 KB - set in Supabase, can change later
@@ -456,8 +458,7 @@ export default function PostWorkout() {
         }
       }
 
-      Alert.alert("Success!", "Your workout has been posted");
-      router.push("/(tabs)/landingMain");
+      setShowSuccessPopup(true);
     } catch (error) {
       console.error("Error posting workout:", error);
       Alert.alert("Error", "Failed to post workout. Please try again.");
@@ -833,6 +834,17 @@ export default function PostWorkout() {
           />
         </View>
       </ScrollView>
+
+      <PopupMessage
+        visible={showSuccessPopup}
+        message="Your workout has been posted successfully!"
+        type="success"
+        confirmText="Continue"
+        onClose={() => {
+          setShowSuccessPopup(false);
+          router.push("/(tabs)/landingMain");
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }

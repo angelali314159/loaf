@@ -90,44 +90,54 @@ export default function ListExercises() {
       onPress={() =>
         router.push({
           pathname: "/exercisePreview",
-          params: { exerciseName: item.name, from: "exerciseList" },
+          params: {
+            exerciseName: item.name,
+            from: "exerciseList",
+            categoryName: name,
+          },
         })
       }
       style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 14,
-        paddingHorizontal: 16,
         opacity: pressed ? 0.6 : 1,
         transform: [{ scale: pressed ? 0.97 : 1 }],
       })}
     >
-      {/* Thumbnail */}
       <View
         style={{
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          overflow: "hidden",
-          backgroundColor: "#e5e5e5",
-          marginRight: 14,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: 14,
+          paddingLeft: width * 0.05,
         }}
       >
+        {/* Thumbnail */}
         <Image
           source={getImageSource(item.image_name)}
-          style={{ width: "100%", height: "100%" }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: "#e5e5e5",
+            marginRight: 14,
+          }}
           resizeMode="cover"
         />
-      </View>
 
-      {/* Name and Category */}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 16, fontWeight: "700", color: "#32393d" }}>
-          {item.name}
-        </Text>
-        <Text style={{ fontSize: 13, color: "#888", marginTop: 2 }}>
-          {item.category ?? ""}
-        </Text>
+        {/* Name and Category */}
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 16, fontWeight: "700", color: "#32393d" }}
+          >
+            {item.name}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 13, color: "#888", marginTop: 2 }}
+          >
+            {item.category ?? ""}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );

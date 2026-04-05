@@ -51,6 +51,7 @@ function ExercisePreviewContent() {
     exerciseName?: string;
     exerciseId?: string;
     from?: string;
+    categoryName?: string;
   }>();
 
   const { getExerciseByName, loading } = useExerciseLibrary();
@@ -212,7 +213,16 @@ function ExercisePreviewContent() {
                 }}
               >
                 <TouchableOpacity
-                  onPress={() => router.push("/exerciseList")}
+                  onPress={() => {
+                    if (params.categoryName) {
+                      router.push({
+                        pathname: "/exerciseList",
+                        params: { name: params.categoryName },
+                      });
+                    } else {
+                      router.back();
+                    }
+                  }}
                   activeOpacity={0.8}
                   style={{
                     width: 40,

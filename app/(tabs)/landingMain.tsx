@@ -1,7 +1,8 @@
 import { BlurView } from "expo-blur";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Dimensions,
   Image,
   Pressable,
   ScrollView,
@@ -9,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { H1, H2, P } from "../../components/typography";
+import { H1, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
 import { supabase } from "../../utils/supabase";
 
@@ -69,13 +70,12 @@ const generateWeek = () => {
 };
 
 export default function LandingMain() {
-  const { username } = useLocalSearchParams<{ username?: string }>();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [workoutPlans, setWorkoutPlans] = useState<WorkoutPlan[]>([]);
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const { height, width } = Dimensions.get("window");
 
-  // Fix 1: define isMountedRef
   const isMountedRef = useRef(true);
 
   const week = useMemo(() => generateWeek(), []);
@@ -289,17 +289,6 @@ export default function LandingMain() {
     });
   };
 
-  const navigateToPreview = (workoutPlan: WorkoutPlan) => {
-    router.push({
-      pathname: "/(tabs)/generatedPreview",
-      params: {
-        duration: workoutPlan.duration,
-        selectedGroups: JSON.stringify(workoutPlan.muscleGroups),
-        selectedEquipments: JSON.stringify(workoutPlan.equipment),
-      },
-    });
-  };
-
   const navigateToExerciseList = (categoryName: string) => {
     router.push({
       pathname: "/(tabs)/exerciseList",
@@ -335,220 +324,249 @@ export default function LandingMain() {
 
       <View className="flex-1 bg-white">
         <ScrollView
-          className="flex-1 mx-4"
-          contentContainerStyle={{ paddingBottom: 140 }}
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: height * 0.15 }}
           showsVerticalScrollIndicator={false}
         >
           <Gradient />
+          <View style={{ marginLeft: width * 0.05, marginRight: width * 0.05 }}>
+            <View
+              style={{
+                marginTop: height * 0.12,
+                marginBottom: height * 0.02,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: width * 0.04,
+              }}
+            >
+              <View>{renderProfilePicture()}</View>
 
-          <View className="mt-32 mb-4 flex-row items-center px-4">
-            <View className="mr-4">{renderProfilePicture()}</View>
-
-            <View className="flex-1 ml-3">
-              <H2 baseSize={15}>Hello {profile?.username ?? "!"}</H2>
-              <H1 baseSize={15}>Are you ready for your workout?</H1>
-            </View>
-          </View>
-
-          {/* Week Section */}
-          <View className="flex-row justify-between px-4 mb-6">
-            {week.map((day, index) => (
-              <View
-                key={index}
-                className="items-center px-2 py-3 rounded-3xl"
-                style={{
-                  backgroundColor: day.isToday ? "#FCDE8C" : "transparent",
-                  minWidth: 48,
-                }}
-              >
-                <Text style={{ fontWeight: "600", color: "#32393d" }}>
-                  {day.dayName}
-                </Text>
-
-                <Text style={{ color: "#32393d", marginTop: 4 }}>
-                  {day.monthDay}
-                </Text>
-
-                <View style={{ marginTop: 6 }}>
-                  {day.isPast || day.isToday ? (
-                    <Text style={{ fontSize: 14, fontWeight: "700" }}>✓</Text>
-                  ) : (
-                    <View
-                      style={{
-                        height: 12,
-                        width: 12,
-                        borderRadius: 6,
-                        borderWidth: 1.5,
-                        borderColor: "#32393d",
-                      }}
-                    />
-                  )}
-                </View>
+              <View style={{ flex: 1, justifyContent: "center" }}>
+                <P>Hello {profile?.username ?? "!"}</P>
+                <P style={{ fontWeight: "700" }}>
+                  Are you ready for your workout?
+                </P>
               </View>
-            ))}
-          </View>
+            </View>
 
-          {/* Workouts Section */}
-          <View className="mb-6">
-            <H1 baseSize={13}>Explore New Workouts</H1>
-
-            {workoutPlans.map((plan, index) => (
-              <TouchableOpacity
-                key={index}
-                className="bg-white p-4 mb-3 shadow-sm"
-                onPress={() => navigateToWorkoutPreview(plan)}
-              >
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1 pr-3">
-                    <P className="text-[#32393d] font-semibold text-lg">
-                      {plan.name}
-                    </P>
-                    <P className="text-[#32393d] opacity-70 mt-1">
-                      {plan.exercises
-                        .slice(0, 2)
-                        .map((ex) => ex.name)
-                        .join(", ")}
-                      {plan.exercises.length > 2 &&
-                        `, +${plan.exercises.length - 2} more`}
-                    </P>
-                  </View>
-
-                  <Pressable
-                    className="w-20 py-2 rounded-2xl bg-[#FCDE8C] items-center"
-                    onPress={() => navigateToWorkout(plan)}
-                  >
-                    <Text className="text-black font-bold tracking-wider">
-                      Start
-                    </Text>
-                  </Pressable>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Explore Exercise Section */}
-          <View className="mb-6 flex-row items-center justify-between">
-            <H1 baseSize={13}>Explore Exercise Categories</H1>
-
-            <Pressable onPress={() => router.push("/exploreCategories")}>
-              <Text
-                style={{ color: "#FAB906", fontSize: 15 }}
-                className="font-bold tracking-wider"
-              >
-                View More
-              </Text>
-            </Pressable>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mb-6"
-          >
-            <View className="flex-row px-4">
-              {/* Abs */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Abs")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Abs_Cat.png")}
+            {/* Week Section */}
+            <View
+              className="flex-row justify-between mb-6"
+              style={{ paddingHorizontal: width * 0.02 }}
+            >
+              {week.map((day, index) => (
+                <View
+                  key={index}
+                  className="items-center px-2 py-3 rounded-3xl"
                   style={{
-                    height: 150,
-                    width: 150,
-                    marginTop: 3.5,
-                    marginRight: 40,
-                    marginLeft: 30,
+                    backgroundColor: day.isToday ? "#FCDE8C" : "transparent",
+                    minWidth: 48,
                   }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d]">
-                  Abs
-                </Text>
-              </Pressable>
+                >
+                  <Text style={{ fontWeight: "600", color: "#32393d" }}>
+                    {day.dayName}
+                  </Text>
 
-              {/* Back */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Back")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Back_Cat.png")}
-                  style={{ height: 150, width: 150 }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d]">
-                  Back
-                </Text>
-              </Pressable>
+                  <Text style={{ color: "#32393d", marginTop: 4 }}>
+                    {day.monthDay}
+                  </Text>
 
-              {/* Chest */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Chest")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Chest_Cat.png")}
-                  style={{ height: 150, width: 150, marginTop: -7 }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d]">
-                  Chest
-                </Text>
-              </Pressable>
+                  <View style={{ marginTop: 6 }}>
+                    {day.isPast || day.isToday ? (
+                      <Text style={{ fontSize: 14, fontWeight: "700" }}>✓</Text>
+                    ) : (
+                      <View
+                        style={{
+                          height: 12,
+                          width: 12,
+                          borderRadius: 6,
+                          borderWidth: 1.5,
+                          borderColor: "#32393d",
+                        }}
+                      />
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
 
-              {/* Calves */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Calves")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Calves_Cat.png")}
-                  style={{ height: 150, width: 150, marginTop: 1.5 }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d]">
-                  Calves
-                </Text>
-              </Pressable>
+            {/* Workouts Section */}
+            <View className="mb-6">
+              <H1 baseSize={12} className="mb-3">
+                Explore New Workouts
+              </H1>
 
-              {/* Quads */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Quads")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190, marginTop: -7 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Quads_Cat.png")}
-                  style={{ height: 150, width: 150 }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d] mt-8">
-                  Quads
-                </Text>
-              </Pressable>
+              {workoutPlans.map((plan, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{
+                    backgroundColor: "#fff",
+                    padding: height * 0.015,
+                    marginBottom: height * 0.015,
+                    borderRadius: width * 0.04,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 3,
+                    elevation: 2,
+                  }}
+                  onPress={() => navigateToWorkoutPreview(plan)}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-1 pr-3">
+                      <P
+                        className="text-[#32393d]"
+                        style={{ fontWeight: "600" }}
+                      >
+                        {plan.name}
+                      </P>
+                      <P className="text-[#32393d] opacity-70 mt-1">
+                        {plan.exercises
+                          .slice(0, 2)
+                          .map((ex) => ex.name)
+                          .join(", ")}
+                        {plan.exercises.length > 2 &&
+                          `, +${plan.exercises.length - 2} more`}
+                      </P>
+                    </View>
 
-              {/* Glutes */}
-              <Pressable
-                onPress={() => navigateToExerciseList("Glutes")}
-                className="mr-6 items-center justify-between"
-                style={{ width: 150, height: 190, marginTop: 5 }}
-              >
-                <Image
-                  source={require("../../assets/images/Cats/Glutes_Cat.png")}
-                  style={{ height: 150, width: 150 }}
-                  resizeMode="contain"
-                />
-                <Text className="text-center font-semibold text-[#32393d]">
-                  Glutes
+                    <Pressable
+                      className="w-20 py-2 rounded-2xl bg-[#FCDE8C] items-center"
+                      onPress={() => navigateToWorkout(plan)}
+                    >
+                      <Text className="text-black font-bold tracking-wider">
+                        Start
+                      </Text>
+                    </Pressable>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Explore Exercise Section */}
+            <View className="mb-6 flex-row items-center justify-between">
+              <H1 baseSize={12}>Explore Exercise Categories</H1>
+
+              <Pressable onPress={() => router.push("/exploreCategories")}>
+                <Text
+                  style={{ color: "#FAB906", fontSize: 15 }}
+                  className="font-bold tracking-wider"
+                >
+                  View More
                 </Text>
               </Pressable>
             </View>
-          </ScrollView>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="mb-6"
+            >
+              <View className="flex-row px-4">
+                {/* Abs */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Abs")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Abs_Cat.png")}
+                    style={{
+                      height: 150,
+                      width: 150,
+                      marginTop: 3.5,
+                      marginRight: 40,
+                      marginLeft: 30,
+                    }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Abs
+                  </Text>
+                </Pressable>
+
+                {/* Back */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Back")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Back_Cat.png")}
+                    style={{ height: 150, width: 150 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Back
+                  </Text>
+                </Pressable>
+
+                {/* Chest */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Chest")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Chest_Cat.png")}
+                    style={{ height: 150, width: 150, marginTop: -7 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Chest
+                  </Text>
+                </Pressable>
+
+                {/* Calves */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Calves")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Calves_Cat.png")}
+                    style={{ height: 150, width: 150, marginTop: 1.5 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Calves
+                  </Text>
+                </Pressable>
+
+                {/* Quads */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Quads")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190, marginTop: -7 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Quads_Cat.png")}
+                    style={{ height: 150, width: 150 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d] mt-8">
+                    Quads
+                  </Text>
+                </Pressable>
+
+                {/* Glutes */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Glutes")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190, marginTop: 5 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Glutes_Cat.png")}
+                    style={{ height: 150, width: 150 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Glutes
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
         </ScrollView>
       </View>
     </View>

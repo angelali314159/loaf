@@ -42,12 +42,17 @@ export default function Explore() {
     });
   };
 
+  // Responsive image size based on screen height
+  const imageSize = height * 0.12;
+
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       <Gradient />
 
       {/* Title */}
-      <View style={{ marginTop: 100, paddingHorizontal: 16 }}>
+      <View
+        style={{ marginTop: height * 0.12, paddingHorizontal: width * 0.05 }}
+      >
         <BackArrow page="/landingMain" />
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>
           Explore Exercise Categories
@@ -57,33 +62,46 @@ export default function Explore() {
       {/* Grid */}
       <ScrollView
         contentContainerStyle={{
-          paddingHorizontal: width * 0.05,
-          paddingTop: 20,
           paddingBottom: height * 0.05,
+          paddingHorizontal: width * 0.05,
+          flexGrow: 1,
+          paddingTop: 10,
+          alignItems: "center",
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: 12,
+            justifyContent: "center",
+            width: "100%",
+          }}
+        >
           {categories.map((item) => (
             <Pressable
               key={item.name}
               onPress={() => handlePress(item)}
               style={({ pressed }) => ({
-                flex: 1,
-                minWidth: "30%",
+                width: width * 0.25,
                 alignItems: "center",
-                marginBottom: 25,
                 opacity: pressed ? 0.6 : 1,
                 transform: [{ scale: pressed ? 0.95 : 1 }],
               })}
             >
               <Image
                 source={item.image}
-                style={{ width: 100, height: 100 }}
+                style={{ width: imageSize, height: imageSize }}
                 resizeMode="contain"
               />
               <Text
-                style={{ marginTop: 8, fontWeight: "600", color: "#32393d" }}
+                style={{
+                  marginTop: 8,
+                  fontWeight: "600",
+                  color: "#32393d",
+                  textAlign: "center",
+                }}
               >
                 {item.name}
               </Text>

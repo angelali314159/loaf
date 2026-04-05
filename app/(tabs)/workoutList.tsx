@@ -140,9 +140,12 @@ export default function WorkoutList() {
       <Gradient />
 
       {/* Static Header Section */}
-      <View className="mx-8">
+      <View style={{ marginLeft: width * 0.08, marginRight: width * 0.08 }}>
         {/* Dice and Plus buttons*/}
-        <View className="flex-row justify-end mt-20">
+        <View
+          className="flex-row justify-end"
+          style={{ marginTop: height * 0.08 }}
+        >
           <TouchableOpacity
             className="p-2 mr-2"
             onPress={() => router.push("/(tabs)/generateWorkout")}
@@ -162,11 +165,12 @@ export default function WorkoutList() {
 
       {/* Scrollable Workout List */}
       <ScrollView
-        className="flex-1 mx-8"
+        className="flex-1"
         contentContainerStyle={{ paddingBottom: height * 0.1 }}
         showsVerticalScrollIndicator={false}
+        style={{ marginLeft: width * 0.08, marginRight: width * 0.08 }}
       >
-        <View className="mb-8">
+        <View style={{ marginBottom: height * 0.1 }}>
           {loading ? (
             <View className="items-center justify-center py-8">
               <P className="text-black">Loading workouts...</P>

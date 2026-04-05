@@ -46,8 +46,9 @@ const Sliders: React.FunctionComponent<SlidersComponentProps> = ({
           thumbProps={{
             children: (
               <Image
-                className=""
-                source={require("../../assets/images/paw_yellow.svg")}
+                source={require("../../assets/images/paw-yellow.png")}
+                style={{ width: 25, height: 25, paddingBottom: 5 }}
+                resizeMode="contain"
               />
             ),
           }}

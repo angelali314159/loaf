@@ -90,7 +90,11 @@ export default function ListExercises() {
       onPress={() =>
         router.push({
           pathname: "/exercisePreview",
-          params: { exerciseName: item.name, from: "exerciseList" },
+          params: {
+            exerciseName: item.name,
+            from: "exerciseList",
+            categoryName: name,
+          },
         })
       }
       style={({ pressed }) => ({

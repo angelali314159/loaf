@@ -1,5 +1,6 @@
 import Gradient from "@/components/ui/Gradient";
 import { Feather } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
 import React from "react";
 import {
   Dimensions,
@@ -27,11 +28,13 @@ export default function FriendSearch() {
   );
   const [incomingRequests, setIncomingRequests] = React.useState<any[]>([]);
 
-  React.useEffect(() => {
-    fetchFriends();
-    fetchPendingRequests();
-    fetchIncomingRequests();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchFriends();
+      fetchPendingRequests();
+      fetchIncomingRequests();
+    }, []),
+  );
 
   const fetchFriends = async () => {
     try {

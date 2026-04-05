@@ -32,11 +32,11 @@ interface ButtonProps {
   onPress: () => void;
   disabled?: boolean;
   /** background color key: 'blue' -> #2D3541, 'yellow' -> #fcde8c */
-  color?: "blue" | "yellow" | "black" | "beige";
+  color?: "blue" | "yellow" | "black" | "beige" | "white";
   /** font color key: 'blue' | 'yellow' | 'white' */
-  fontColor?: "blue" | "yellow" | "white" | "black";
+  fontColor?: "blue" | "yellow" | "white" | "black" | "gray";
   /** border color key: 'blue' | 'yellow' | 'white' */
-  borderColor?: "blue" | "yellow" | "white";
+  borderColor?: "blue" | "yellow" | "white" | "gray";
   style?: ViewStyle;
   textStyle?: TextStyle;
   className?: string;
@@ -49,19 +49,22 @@ const BG_MAP: Record<string, string> = {
   blue: "#2D3541",
   yellow: "#fcde8c",
   black: "#18202A",
-  beige: "#F1EAD2"
+  beige: "#F1EAD2",
+  white: "#FFFFFF",
 };
 
 const FONT_MAP: Record<string, string> = {
   blue: "#2D3541",
   yellow: "#fcde8c",
   white: "#FFFFFF",
+  gray: "#32393d",
 };
 
 const BORDER_MAP: Record<string, string> = {
   blue: "#2D3541",
   yellow: "#fcde8c",
   white: "#FFFFFF",
+  gray: "#32393d",
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");

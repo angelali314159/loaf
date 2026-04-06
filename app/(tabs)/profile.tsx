@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Button, H4, P } from "../../components/typography";
 import Gradient from "../../components/ui/Gradient";
-import LeaguePopup from "../../components/ui/LeaguePopup";
+import LeaguePopup from "../../components/ui/leaguePopup";
 import { useAuth } from "../../contexts/AuthContext";
 import { STORAGE_BUCKETS } from "../../utils/storageConstants";
 import { supabase } from "../../utils/supabase";

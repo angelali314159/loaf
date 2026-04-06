@@ -7,7 +7,7 @@ import React, { useCallback, useState } from "react";
 import { Dimensions, ScrollView, View } from "react-native";
 import { Button, H2 } from "../../components/typography";
 import BackArrow from "../../components/ui/BackArrow";
-import MuscleGroups from "../../components/ui/MuscleGroups";
+import MuscleGroups from "../../components/ui/muscleGroups";
 import PopupMessage from "../../components/ui/PopupMessage";
 import Sliders from "../../components/ui/Slider";
 

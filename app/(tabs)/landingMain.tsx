@@ -517,6 +517,54 @@ export default function LandingMain() {
                   </Text>
                 </Pressable>
 
+                {/* Shoulders */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Chest")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Shoulders_Cat.png")}
+                    style={{ height: 150, width: 150, marginTop: -7 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Shoulders
+                  </Text>
+                </Pressable>
+
+                {/* Biceps */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Chest")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Biceps_Cat.png")}
+                    style={{ height: 150, width: 150, marginTop: -7 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Biceps
+                  </Text>
+                </Pressable>
+
+                {/* Triceps */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Chest")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Triceps_Cat.png")}
+                    style={{ height: 150, width: 150, marginTop: -7 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d]">
+                    Triceps
+                  </Text>
+                </Pressable>
+
                 {/* Calves */}
                 <Pressable
                   onPress={() => navigateToExerciseList("Calves")}
@@ -546,6 +594,22 @@ export default function LandingMain() {
                   />
                   <Text className="text-center font-semibold text-[#32393d] mt-8">
                     Quads
+                  </Text>
+                </Pressable>
+
+                {/* Hamstrings */}
+                <Pressable
+                  onPress={() => navigateToExerciseList("Quads")}
+                  className="mr-6 items-center justify-between"
+                  style={{ width: 150, height: 190, marginTop: -7 }}
+                >
+                  <Image
+                    source={require("../../assets/images/Cats/Hamstrings_Cat.png")}
+                    style={{ height: 150, width: 150 }}
+                    resizeMode="contain"
+                  />
+                  <Text className="text-center font-semibold text-[#32393d] mt-8">
+                    Hamstrings
                   </Text>
                 </Pressable>
 

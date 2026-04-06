@@ -23,7 +23,7 @@ import {
 import { BottomFade, TopFade } from "../FadeEdges";
 import { H1 } from "../typography";
 import Equipment from "./Equipment";
-import MuscleGroups from "./MuscleGroups";
+import MuscleGroups from "./muscleGroups";
 
 // ─── Exercise Images ──────────────────────────────────────────────────────────
 // Static mapping of all exercise images in assets/images/exercises/
